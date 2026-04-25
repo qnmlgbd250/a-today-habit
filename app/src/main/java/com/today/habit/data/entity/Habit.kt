@@ -2,17 +2,36 @@ package com.today.habit.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.gson.annotations.SerializedName
 
 @Entity(tableName = "habits")
 data class Habit(
     @PrimaryKey(autoGenerate = true)
+    @SerializedName("id")
     val id: Long = 0,
+
+    @SerializedName("name")
     val name: String,
+
+    @SerializedName("description")
     val description: String,
-    val icon: String,
-    val color: Int,
+
+    @SerializedName("icon")
+    val icon: String = "Sunny",
+
+    @SerializedName("color")
+    val color: Int = 0,
+
+    @SerializedName("frequency")
     val frequency: String = "DAILY", // DAILY, WEEKLY, MONTHLY
-    val frequencyValue: String = "", // 如 "1,3,5" 表示周一三五
-    val targetCount: Int = 1, // 每日目标次数
+
+    @SerializedName("frequencyValue")
+    val frequencyValue: String = "",
+
+    @SerializedName("targetCount")
+    val targetCount: Int = 1,
+
+    @SerializedName("createdAt")
     val createdAt: Long = System.currentTimeMillis()
 )
+

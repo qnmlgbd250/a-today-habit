@@ -1,10 +1,10 @@
-# Add project specific ProGuard rules here.
-# By default, the flags in this file are appended to flags specified
-# in C:\Users\PC\AppData\Local\Android\Sdk/tools/proguard/proguard-android.txt
-# You can edit the include path and order by changing the proguardFiles
-# directive in build.gradle.
+# 保持 Room 实体类不被混淆
+-keep class com.today.habit.data.entity.** { *; }
 
-# For more details, see
-#   http://developer.android.com/guide/developing/tools-proguard.html
+# 保持备份数据模型不被混淆
+-keep class com.today.habit.ui.viewmodel.BackupData { *; }
 
-# Add any custom ProGuard rules here
+# 保持 Gson 相关注解
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.google.gson.** { *; }

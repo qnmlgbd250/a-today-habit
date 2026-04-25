@@ -23,6 +23,7 @@ import com.today.habit.data.HabitRepository
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HandDrawnSun
+import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.viewmodel.HabitViewModel
 import com.today.habit.ui.viewmodel.HabitViewModelFactory
 import java.time.LocalDate
@@ -163,8 +164,13 @@ fun getHeatmapColor(count: Int): Color {
 
 @Composable
 fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
-    val totalCount = checkIns.size
-    val streak = calculateStreak(checkIns)
+    // 只有打卡次数 >= 目标次数的记录才被视为“已完成”
+    val completedCheckIns = remember(checkIns, habit.targetCount) {
+        checkIns.filter { it.count >= habit.targetCount }
+    }
+    
+    val totalCount = completedCheckIns.size
+    val streak = calculateStreak(completedCheckIns)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -182,7 +188,12 @@ fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                HandDrawnSun(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.primary)
+                Icon(
+                    imageVector = HabitIcons.getIcon(habit.icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
             
             Spacer(modifier = Modifier.width(16.dp))

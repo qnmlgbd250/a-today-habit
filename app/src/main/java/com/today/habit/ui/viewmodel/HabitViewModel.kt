@@ -4,14 +4,27 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.*
+import com.google.gson.Gson
 import com.today.habit.data.HabitRepository
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+import com.google.gson.annotations.SerializedName
+
+data class BackupData(
+    @SerializedName("habits")
+    val habits: List<Habit>,
+    
+    @SerializedName("records")
+    val records: List<CheckInRecord>
+)
+
 class HabitViewModel(private val repository: HabitRepository) : ViewModel() {
+    private val gson = Gson()
 
     private val _selectedDate = mutableStateOf(LocalDate.now())
     val selectedDate: State<LocalDate> = _selectedDate
@@ -28,11 +41,11 @@ class HabitViewModel(private val repository: HabitRepository) : ViewModel() {
             when (habit.frequency) {
                 "DAILY" -> true
                 "WEEKDAYS" -> {
-                    val dayOfWeek = date.dayOfWeek.value // 1 (Mon) to 7 (Sun)
+                    val dayOfWeek = date.dayOfWeek.value
                     dayOfWeek in 1..5
                 }
                 "WEEKLY" -> {
-                    val dayOfWeek = date.dayOfWeek.value.toString() // 1-7
+                    val dayOfWeek = date.dayOfWeek.value.toString()
                     habit.frequencyValue.split(",").contains(dayOfWeek)
                 }
                 "MONTHLY" -> {
@@ -83,6 +96,31 @@ class HabitViewModel(private val repository: HabitRepository) : ViewModel() {
     
     fun getCheckInsByHabitId(habitId: Long): Flow<List<CheckInRecord>> {
         return repository.getCheckInsByHabitId(habitId)
+    }
+
+    suspend fun exportDataJson(): String {
+        val habits = repository.allHabits.first()
+        val records = repository.allCheckIns.first()
+        return gson.toJson(BackupData(habits, records))
+    }
+
+    fun importDataJson(json: String, onComplete: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val data = gson.fromJson(json, BackupData::class.java)
+                if (data?.habits == null) {
+                    onComplete(false, "备份文件格式不正确")
+                    return@launch
+                }
+                repository.clearAllData()
+                repository.insertHabits(data.habits)
+                repository.insertCheckIns(data.records)
+                onComplete(true, null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(false, e.message)
+            }
+        }
     }
 }
 

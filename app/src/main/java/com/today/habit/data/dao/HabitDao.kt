@@ -36,5 +36,11 @@ interface HabitDao {
 
     @Query("SELECT * FROM check_in_records")
     fun getAllCheckIns(): Flow<List<CheckInRecord>>
+
+    @Query("DELETE FROM habits")
+    suspend fun deleteAllHabits()
+
+    @Query("DELETE FROM check_in_records")
+    suspend fun deleteAllCheckIns()
 }
 

@@ -38,6 +38,19 @@ class HabitRepository(private val habitDao: HabitDao) {
         }
     }
     
+    suspend fun clearAllData() {
+        habitDao.deleteAllHabits()
+        habitDao.deleteAllCheckIns()
+    }
+
+    suspend fun insertHabits(habits: List<Habit>) {
+        habits.forEach { habitDao.insertHabit(it) }
+    }
+
+    suspend fun insertCheckIns(records: List<CheckInRecord>) {
+        records.forEach { habitDao.insertCheckIn(it) }
+    }
+
     fun getCheckInsByHabitId(habitId: Long): Flow<List<CheckInRecord>> {
         return habitDao.getCheckInsByHabitId(habitId)
     }

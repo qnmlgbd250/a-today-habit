@@ -1,7 +1,14 @@
 package com.today.habit.ui.screen
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import kotlinx.coroutines.launch
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -63,6 +70,57 @@ fun HomeScreen(navController: NavController) {
     val database = AppDatabase.getDatabase(context)
     val repository = HabitRepository(database.habitDao())
     val viewModel: HabitViewModel = viewModel(factory = HabitViewModelFactory(repository))
+    val scope = rememberCoroutineScope()
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                try {
+                    val json = viewModel.exportDataJson()
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        OutputStreamWriter(outputStream).use { writer ->
+                            writer.write(json)
+                        }
+                    }
+                    android.widget.Toast.makeText(context, "备份成功", android.widget.Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    android.widget.Toast.makeText(context, "备份失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                try {
+                    context.contentResolver.openInputStream(it)?.use { inputStream ->
+                        InputStreamReader(inputStream).use { reader ->
+                            val json = reader.readText()
+                            viewModel.importDataJson(json) { success, message ->
+                                if (success) {
+                                    android.widget.Toast.makeText(context, "恢复成功", android.widget.Toast.LENGTH_SHORT).show()
+                                    // 强制触发 UI 刷新
+                                    val current = viewModel.selectedDate.value
+                                    viewModel.setSelectedDate(current)
+                                } else {
+                                    android.widget.Toast.makeText(context, "恢复失败: $message", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    android.widget.Toast.makeText(context, "文件读取失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     val allHabits by viewModel.allHabits.observeAsState(emptyList())
     val selectedDate by viewModel.selectedDate
@@ -132,6 +190,27 @@ fun HomeScreen(navController: NavController) {
                                     onClick = {
                                         showMenu = false
                                         showManageDialog = true
+                                    }
+                                )
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("备份数据", fontWeight = FontWeight.Medium) },
+                                    leadingIcon = { Icon(Icons.Default.Backup, contentDescription = null, tint = ThemeGreen) },
+                                    onClick = {
+                                        showMenu = false
+                                        exportLauncher.launch("habit_backup_${LocalDate.now()}.json")
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("恢复数据", fontWeight = FontWeight.Medium) },
+                                    leadingIcon = { Icon(Icons.Default.Restore, contentDescription = null, tint = ThemeGreen) },
+                                    onClick = {
+                                        showMenu = false
+                                        importLauncher.launch(arrayOf("application/json"))
                                     }
                                 )
                             }
