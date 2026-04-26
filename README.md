@@ -1,46 +1,83 @@
-# A Today Habit (今日习惯) 🌿
+# A Today Habit 🌿
 
-一个基于 Android Jetpack Compose 开发的清新、简约、功能强大的习惯追踪应用。
+A minimalist, beautiful habit tracking app built with Jetpack Compose for Android.
 
-## ✨ 功能特性
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Language: Kotlin](https://img.shields.io/badge/Language-Kotlin-purple.svg)](https://kotlinlang.org/)
+[![Android: 8.0+](https://img.shields.io/badge/Android-8.0+-green.svg)](https://www.android.com/)
 
-- **简约美学**：极简主义设计，提供无压力的使用体验。
-- **分次打卡**：支持设定每日目标次数（如：一天喝 8 杯水），通过圆环进度展示完成度。
-- **顺时针动画**：精致的打卡填充动画，增强达成目标的成就感。
-- **合并热力图**：全习惯汇总热力图，根据打卡频率呈现 5 级绿色深度变化。
-- **灵活周期**：支持每天、工作日、每周（指定日期）、每月（指定日期）等多种周期设定。
-- **常用图标库**：内置 20+ 精美线性图标，涵盖学习、运动、生活等多种场景。
-- **习惯管理**：支持随时编辑、重命名或删除已有的习惯。
+## Features ✨
 
-## 🛠 技术栈
+- **Minimalist Design** — Clean, distraction-free interface with elegant animations
+- **Multi-rep Tracking** — Track daily goals with multiple reps (e.g., drink 8 glasses of water)
+- **Visual Progress** — Circular progress rings and animated check-ins for motivation
+- **Heatmap View** — See all habits in one unified heatmap with 5-level color intensity
+- **Flexible Schedules** — Daily, weekdays, custom weekly, and custom monthly intervals
+- **Rich Icons** — 20+ built-in linear icons covering fitness, learning, lifestyle, and more
+- **Full Control** — Edit, rename, or delete habits anytime
 
-- **UI 框架**：[Jetpack Compose](https://developer.android.com/jetpack/compose) (声明式 UI)
-- **架构**：MVVM (ViewModel + Flow + LiveData)
-- **数据库**：[Room](https://developer.android.com/training/data-storage/room) (本地持久化)
-- **导航**：Compose Navigation
-- **语言**：Kotlin + Kotlin Coroutines & Flow
+## Tech Stack 🛠
 
-## 🚀 构建与安装
+| Component | Technology |
+|-----------|-----------|
+| **UI** | [Jetpack Compose](https://developer.android.com/jetpack/compose) |
+| **Architecture** | MVVM (ViewModel + Flow + LiveData) |
+| **Database** | [Room](https://developer.android.com/training/data-storage/room) |
+| **Navigation** | Compose Navigation |
+| **Language** | Kotlin 2.0+ |
+| **Async** | Kotlin Coroutines & Flow |
 
-### 环境要求
-- Android Studio Ladybug (2024.2.1) 或更高版本
-- JDK 17
-- Android SDK 26+ (Android 8.0 及以上)
+## Quick Start 🚀
 
-### 构建步骤
-1. **克隆仓库**
-   ```bash
-   git clone git@github.com:qnmlgbd250/a-today-habit.git
-   ```
-2. **打开项目**
-   使用 Android Studio 打开项目根目录。
-3. **同步 Gradle**
-   等待 Gradle 构建完成并下载相关依赖。
-4. **运行应用**
-   连接 Android 设备或模拟器，点击 **Run** 按钮。
+### Prerequisites
+- Android Studio Ladybug (2024.2.1) or later
+- JDK 17+
+- Android SDK 26+ (API 26, Android 8.0+)
 
-## 📸 预览
-*(由于当前为纯代码环境，请在运行后自行查看精致的 UI 效果)*
+### Build
+```bash
+# Clone the repository
+git clone https://github.com/qnmlgbd250/a-today-habit.git
 
-## 📄 开源协议
-MIT License
+# Open in Android Studio and build
+# Or build via command line
+./gradlew build
+
+# Run on device/emulator
+./gradlew installDebug
+```
+
+## Project Structure 📁
+
+```
+a-today-habit/
+├── app/
+│   ├── src/main/java/com/example/habit/
+│   │   ├── ui/          # Compose screens & components
+│   │   ├── viewmodel/   # MVVM ViewModels
+│   │   ├── model/       # Data models & entities
+│   │   └── database/    # Room database setup
+│   └── build.gradle.kts
+└── gradle/
+```
+
+## Contributing 🤝
+
+Contributions are welcome! Please feel free to:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License 📄
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+## Author
+
+[@qnmlgbd250](https://github.com/qnmlgbd250)
+
+---
+
+*Built with ❤️ in Kotlin*
