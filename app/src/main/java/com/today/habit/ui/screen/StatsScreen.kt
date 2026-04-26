@@ -1,6 +1,12 @@
 package com.today.habit.ui.screen
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,6 +35,8 @@ import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.viewmodel.HabitViewModel
 import com.today.habit.ui.viewmodel.HabitViewModelFactory
 import java.time.LocalDate
+import com.today.habit.ui.theme.ThemeGreen
+import com.today.habit.ui.theme.ThemeGreenDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +72,7 @@ fun StatsScreen() {
                 CombinedHeatmapCard(allCheckIns)
             }
 
-            // 下区：习惯列表 (移除了“习惯项统计”标题)
+            // 下区：习惯列表
             items(habits, key = { it.id }) { habit ->
                 val habitCheckIns by viewModel.getCheckInsByHabitId(habit.id).collectAsState(emptyList())
                 HabitStatsItem(habit, habitCheckIns)
@@ -91,7 +101,7 @@ fun CombinedHeatmapCard(allCheckIns: List<CheckInRecord>) {
             ) {
                 Text(text = "打卡热力图", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 
-                // 图例：移动到右上角
+                // 图例
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("少", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.width(4.dp))
@@ -141,7 +151,7 @@ fun MultiLevelHeatmap(countsByDate: Map<String, Int>) {
                         Box(
                             modifier = Modifier
                                 .size(13.dp)
-                                .clip(RoundedCornerShape(3.dp)) // 恢复为带微圆角的方形
+                                .clip(RoundedCornerShape(3.dp))
                                 .background(getHeatmapColor(count))
                         )
                     }
@@ -171,6 +181,14 @@ fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
     
     val totalCount = completedCheckIns.size
     val streak = calculateStreak(completedCheckIns)
+    
+    // 进度环比例：以21天为一个阶段目标
+    val targetDays = 21f
+    val progress = animateFloatAsState(
+        targetValue = (totalCount.toFloat() / targetDays).coerceAtMost(1f),
+        animationSpec = tween(durationMillis = 800),
+        label = "StatsProgress"
+    )
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -182,17 +200,35 @@ fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                modifier = Modifier.size(52.dp),
                 contentAlignment = Alignment.Center
             ) {
+                // 进度环
+                Canvas(modifier = Modifier.size(48.dp)) {
+                    drawArc(
+                        color = Color.LightGray.copy(alpha = 0.2f),
+                        startAngle = 0f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                    if (progress.value > 0f) {
+                        drawArc(
+                            color = ThemeGreen,
+                            startAngle = -90f,
+                            sweepAngle = 360f * progress.value,
+                            useCenter = false,
+                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                    }
+                }
+                
+                // 图标
                 Icon(
                     imageVector = HabitIcons.getIcon(habit.icon),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = if (progress.value >= 1f) ThemeGreenDark else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 )
             }
             

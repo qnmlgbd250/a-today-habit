@@ -29,11 +29,28 @@ class HabitViewModel(private val repository: HabitRepository) : ViewModel() {
     private val _selectedDate = mutableStateOf(LocalDate.now())
     val selectedDate: State<LocalDate> = _selectedDate
 
+    // 记录用户是否手动选择了特定日期
+    // 如果为 false，表示用户处于“今日”视图，应该随时间自动跳转
+    private var isManuallySelected = false
+
     val allHabits: LiveData<List<Habit>> = repository.allHabits.asLiveData()
     val allCheckIns: LiveData<List<CheckInRecord>> = repository.allCheckIns.asLiveData()
 
     fun setSelectedDate(date: LocalDate) {
         _selectedDate.value = date
+        isManuallySelected = date != LocalDate.now()
+    }
+
+    /**
+     * 当应用恢复到前台时调用，用于刷新“今日”状态
+     */
+    fun refreshDateIfNecessary() {
+        val today = LocalDate.now()
+        // 如果用户没有手动选择日期，或者当前选择的日期已经过期了
+        if (!isManuallySelected || _selectedDate.value.isBefore(today)) {
+            _selectedDate.value = today
+            isManuallySelected = false
+        }
     }
 
     fun getFilteredHabits(habits: List<Habit>, date: LocalDate): List<Habit> {

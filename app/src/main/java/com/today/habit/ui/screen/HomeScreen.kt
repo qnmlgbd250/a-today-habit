@@ -54,14 +54,15 @@ import com.today.habit.ui.component.HandDrawnSun
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.viewmodel.HabitViewModel
 import com.today.habit.ui.viewmodel.HabitViewModelFactory
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.*
-
-// 定义全局统一的主题绿
-val ThemeGreen = Color(0xFF4CAF50)
-val ThemeGreenDark = Color(0xFF2E7D32)
-val ThemeGreenLight = Color(0xFFE8F5E9)
+import com.today.habit.ui.theme.ThemeGreen
+import com.today.habit.ui.theme.ThemeGreenDark
+import com.today.habit.ui.theme.ThemeGreenLight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +72,20 @@ fun HomeScreen(navController: NavController) {
     val repository = HabitRepository(database.habitDao())
     val viewModel: HabitViewModel = viewModel(factory = HabitViewModelFactory(repository))
     val scope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // 监听生命周期，当应用回到前台时刷新日期
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshDateIfNecessary()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -205,6 +220,11 @@ fun HomeScreen(navController: NavController) {
                                         exportLauncher.launch("habit_backup_${LocalDate.now()}.json")
                                     }
                                 )
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                                )
                                 DropdownMenuItem(
                                     text = { Text("恢复数据", fontWeight = FontWeight.Medium) },
                                     leadingIcon = { Icon(Icons.Default.Restore, contentDescription = null, tint = ThemeGreen) },
@@ -221,7 +241,11 @@ fun HomeScreen(navController: NavController) {
                         titleContentColor = MaterialTheme.colorScheme.onBackground
                     )
                 )
-                if (showDateBar) {
+                AnimatedVisibility(
+                    visible = showDateBar,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
                     DateSelectionBar(selectedDate) { viewModel.setSelectedDate(it) }
                 }
             }
@@ -272,8 +296,9 @@ fun HomeScreen(navController: NavController) {
 
 @Composable
 fun DateSelectionBar(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Unit) {
-    val dates = remember {
-        (-30..30).map { LocalDate.now().plusDays(it.toLong()) }
+    val today = LocalDate.now()
+    val dates = remember(today) {
+        (-30..30).map { today.plusDays(it.toLong()) }
     }
     val listState = rememberLazyListState()
     
@@ -429,84 +454,176 @@ fun AddHabitDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, St
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 24.dp),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("新建习惯", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                
-                OutlinedTextField(
-                    value = name, 
-                    onValueChange = { name = it }, 
-                    label = { Text("习惯名称") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text(
+                    "新建习惯",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 4.dp)
                 )
                 
-                Text("选择图标", style = MaterialTheme.typography.titleMedium)
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    HabitIcons.IconsMap.forEach { (name, icon) ->
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .size(50.dp)
-                                    .clip(CircleShape)
-                                    .background(if (selectedIcon == name) ThemeGreenLight else Color.Transparent)
-                                    .clickable { selectedIcon = name }
-                                    .padding(8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(icon, contentDescription = null, tint = if (selectedIcon == name) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant)
+                // 基础信息部分
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = name, 
+                        onValueChange = { name = it }, 
+                        label = { Text("习惯名称") },
+                        placeholder = { Text("例如：早起跑步") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ThemeGreen,
+                            focusedLabelColor = ThemeGreen
+                        )
+                    )
+                }
+                
+                // 图标选择部分
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "选择图标", 
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        HabitIcons.IconsMap.forEach { (name, icon) ->
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .clip(CircleShape)
+                                        .background(if (selectedIcon == name) ThemeGreen.copy(alpha = 0.15f) else Color.Transparent)
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (selectedIcon == name) ThemeGreen else Color.Transparent,
+                                            shape = CircleShape
+                                        )
+                                        .clickable { selectedIcon = name }
+                                        .padding(8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        icon, 
+                                        contentDescription = null, 
+                                        tint = if (selectedIcon == name) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                Text("每日目标次数: $targetCount", style = MaterialTheme.typography.titleMedium)
-                Slider(
-                    value = targetCount.toFloat(),
-                    onValueChange = { targetCount = it.toInt() },
-                    valueRange = 1f..10f,
-                    steps = 8,
-                    colors = SliderDefaults.colors(thumbColor = ThemeGreen, activeTrackColor = ThemeGreen)
-                )
+                // 目标设定部分
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "每日目标次数", 
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "$targetCount 次", 
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = ThemeGreen
+                        )
+                    }
+                    Slider(
+                        value = targetCount.toFloat(),
+                        onValueChange = { targetCount = it.toInt() },
+                        valueRange = 1f..10f,
+                        steps = 8,
+                        colors = SliderDefaults.colors(
+                            thumbColor = ThemeGreen,
+                            activeTrackColor = ThemeGreen,
+                            inactiveTrackColor = ThemeGreen.copy(alpha = 0.2f)
+                        )
+                    )
+                }
                 
-                Text("选择周期", style = MaterialTheme.typography.titleMedium)
-                FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月").forEach { (id, label) ->
-                        FilterChip(
-                            selected = frequency == id,
-                            onClick = { frequency = id; frequencyValue = "" },
-                            label = { Text(label) },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = ThemeGreen, selectedLabelColor = Color.White)
+                // 周期选择部分
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "重复周期", 
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(), 
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月").forEach { (id, label) ->
+                            FilterChip(
+                                selected = frequency == id,
+                                onClick = { frequency = id; frequencyValue = "" },
+                                label = { Text(label) },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = ThemeGreen,
+                                    selectedLabelColor = Color.White,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                border = null
+                            )
+                        }
+                    }
+                    
+                    if (frequency == "WEEKLY" || frequency == "MONTHLY") {
+                        OutlinedTextField(
+                            value = frequencyValue, 
+                            onValueChange = { frequencyValue = it }, 
+                            placeholder = { Text(if(frequency == "WEEKLY") "例如: 1,3,5 (周几)" else "例如: 1,15 (几号)") },
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ThemeGreen,
+                                focusedLabelColor = ThemeGreen
+                            )
                         )
                     }
                 }
-                
-                if (frequency == "WEEKLY" || frequency == "MONTHLY") {
-                    OutlinedTextField(
-                        value = frequencyValue, 
-                        onValueChange = { frequencyValue = it }, 
-                        placeholder = { Text(if(frequency == "WEEKLY") "例如: 1,3,5 (周几)" else "例如: 1,15 (几号)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
-                    )
-                }
 
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)) { Text("取消") }
-                    Spacer(modifier = Modifier.width(8.dp))
+                // 底部按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp), 
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    ) {
+                        Text("取消", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     Button(
                         onClick = { onConfirm(name, "", frequency, frequencyValue, selectedIcon, targetCount) }, 
                         enabled = name.isNotBlank(),
-                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = ThemeGreen)
                     ) {
                         Text("创建")
@@ -634,7 +751,7 @@ fun HabitManageItem(habit: Habit, onEdit: () -> Unit, onDelete: () -> Unit) {
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.OutlinedFlag, // 改用更轻盈的图标
+                        imageVector = Icons.Default.Edit, // 改为编辑图标
                         contentDescription = "编辑",
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -667,35 +784,171 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Un
     var targetCount by remember { mutableStateOf(habit.targetCount) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(modifier = Modifier.fillMaxWidth().padding(16.dp), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("编辑习惯", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("习惯名称") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen))
-                Text("选择图标", style = MaterialTheme.typography.titleMedium)
-                LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    HabitIcons.IconsMap.forEach { (name, icon) ->
-                        item {
-                            Box(modifier = Modifier.size(50.dp).clip(CircleShape).background(if (selectedIcon == name) ThemeGreenLight else Color.Transparent).clickable { selectedIcon = name }.padding(8.dp), contentAlignment = Alignment.Center) {
-                                Icon(icon, contentDescription = null, tint = if (selectedIcon == name) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 24.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text(
+                    "编辑习惯", 
+                    style = MaterialTheme.typography.headlineSmall, 
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+
+                // 基础信息
+                OutlinedTextField(
+                    value = name, 
+                    onValueChange = { name = it }, 
+                    label = { Text("习惯名称") }, 
+                    modifier = Modifier.fillMaxWidth(), 
+                    shape = RoundedCornerShape(12.dp), 
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
+                )
+
+                // 图标选择
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "选择图标", 
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(), 
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        HabitIcons.IconsMap.forEach { (name, icon) ->
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .clip(CircleShape)
+                                        .background(if (selectedIcon == name) ThemeGreen.copy(alpha = 0.15f) else Color.Transparent)
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (selectedIcon == name) ThemeGreen else Color.Transparent,
+                                            shape = CircleShape
+                                        )
+                                        .clickable { selectedIcon = name }
+                                        .padding(8.dp), 
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        icon, 
+                                        contentDescription = null, 
+                                        tint = if (selectedIcon == name) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
-                Text("每日目标次数: $targetCount", style = MaterialTheme.typography.titleMedium)
-                Slider(value = targetCount.toFloat(), onValueChange = { targetCount = it.toInt() }, valueRange = 1f..10f, steps = 8, colors = SliderDefaults.colors(thumbColor = ThemeGreen, activeTrackColor = ThemeGreen))
-                Text("选择周期", style = MaterialTheme.typography.titleMedium)
-                FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月").forEach { (id, label) ->
-                        FilterChip(selected = frequency == id, onClick = { frequency = id; if (id == "DAILY" || id == "WEEKDAYS") frequencyValue = "" }, label = { Text(label) }, shape = RoundedCornerShape(8.dp), colors = FilterChipDefaults.filterChipColors(selectedContainerColor = ThemeGreen, selectedLabelColor = Color.White))
+
+                // 目标设定
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "每日目标次数", 
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "$targetCount 次", 
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = ThemeGreen
+                        )
+                    }
+                    Slider(
+                        value = targetCount.toFloat(), 
+                        onValueChange = { targetCount = it.toInt() }, 
+                        valueRange = 1f..10f, 
+                        steps = 8, 
+                        colors = SliderDefaults.colors(
+                            thumbColor = ThemeGreen, 
+                            activeTrackColor = ThemeGreen,
+                            inactiveTrackColor = ThemeGreen.copy(alpha = 0.2f)
+                        )
+                    )
+                }
+
+                // 周期选择
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "重复周期", 
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(), 
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月").forEach { (id, label) ->
+                            FilterChip(
+                                selected = frequency == id, 
+                                onClick = { frequency = id; if (id == "DAILY" || id == "WEEKDAYS") frequencyValue = "" }, 
+                                label = { Text(label) }, 
+                                shape = RoundedCornerShape(12.dp), 
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = ThemeGreen, 
+                                    selectedLabelColor = Color.White,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                border = null
+                            )
+                        }
+                    }
+                    
+                    if (frequency == "WEEKLY" || frequency == "MONTHLY") {
+                        OutlinedTextField(
+                            value = frequencyValue, 
+                            onValueChange = { frequencyValue = it }, 
+                            placeholder = { Text(if(frequency == "WEEKLY") "例如: 1,3,5 (周几)" else "例如: 1,15 (几号)") }, 
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp), 
+                            shape = RoundedCornerShape(12.dp), 
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
+                        )
                     }
                 }
-                if (frequency == "WEEKLY" || frequency == "MONTHLY") {
-                    OutlinedTextField(value = frequencyValue, onValueChange = { frequencyValue = it }, placeholder = { Text(if(frequency == "WEEKLY") "例如: 1,3,5 (周几)" else "例如: 1,15 (几号)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen))
-                }
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)) { Text("取消") }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = { onUpdate(habit.copy(name = name, frequency = frequency, frequencyValue = frequencyValue, icon = selectedIcon, targetCount = targetCount)) }, enabled = name.isNotBlank(), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = ThemeGreen)) { Text("保存") }
+
+                // 底部按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp), 
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    ) {
+                        Text("取消", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Button(
+                        onClick = { onUpdate(habit.copy(name = name, frequency = frequency, frequencyValue = frequencyValue, icon = selectedIcon, targetCount = targetCount)) }, 
+                        enabled = name.isNotBlank(), 
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp), 
+                        colors = ButtonDefaults.buttonColors(containerColor = ThemeGreen)
+                    ) { 
+                        Text("保存") 
+                    }
                 }
             }
         }
