@@ -118,24 +118,34 @@ class HabitViewModel(private val repository: HabitRepository) : ViewModel() {
     suspend fun exportDataJson(): String {
         val habits = repository.allHabits.first()
         val records = repository.allCheckIns.first()
-        return gson.toJson(BackupData(habits, records))
+        val data = BackupData(habits, records)
+        return gson.toJson(data)
     }
 
     fun importDataJson(json: String, onComplete: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             try {
                 val data = gson.fromJson(json, BackupData::class.java)
-                if (data?.habits == null) {
-                    onComplete(false, "备份文件格式不正确")
+                if (data == null || data.habits == null) {
+                    onComplete(false, "备份文件格式不正确或内容为空")
                     return@launch
                 }
+                
+                // 执行数据库操作
                 repository.clearAllData()
+                
+                // 批量插入习惯
                 repository.insertHabits(data.habits)
-                repository.insertCheckIns(data.records)
+                
+                // 批量插入记录
+                if (data.records != null && data.records.isNotEmpty()) {
+                    repository.insertCheckIns(data.records)
+                }
+                
                 onComplete(true, null)
             } catch (e: Exception) {
                 e.printStackTrace()
-                onComplete(false, e.message)
+                onComplete(false, "恢复过程中发生错误: ${e.localizedMessage}")
             }
         }
     }
