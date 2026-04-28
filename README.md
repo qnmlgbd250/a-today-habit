@@ -6,6 +6,12 @@ A minimalist, beautiful habit tracking app built with Jetpack Compose for Androi
 [![Language: Kotlin](https://img.shields.io/badge/Language-Kotlin-purple.svg)](https://kotlinlang.org/)
 [![Android: 8.0+](https://img.shields.io/badge/Android-8.0+-green.svg)](https://www.android.com/)
 
+## Screenshots 📸
+
+| Screenshot 1 | Screenshot 2 |
+|:---:|:---:|
+| ![Screenshot 1](Screenshot.jpg) | ![Screenshot 2](Screenshot_2.jpg) |
+
 ## Features ✨
 
 - **Minimalist Design** — Clean, distraction-free interface with elegant animations
