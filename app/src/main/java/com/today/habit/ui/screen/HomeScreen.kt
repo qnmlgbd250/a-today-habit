@@ -485,7 +485,14 @@ fun AddHabitDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, St
 
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("每日目标次数", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        val targetLabel = when (frequency) {
+                            "DAILY" -> "目标次数 (每日)"
+                            "WEEKDAYS" -> "目标次数 (工作日)"
+                            "WEEKLY" -> "目标次数 (每周)"
+                            "MONTHLY" -> "目标次数 (每月)"
+                            else -> "目标次数 (每日)"
+                        }
+                        Text(targetLabel, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("$targetCount 次", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = ThemeGreen)
                     }
                     Slider(
