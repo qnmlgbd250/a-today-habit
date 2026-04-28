@@ -26,26 +26,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.today.habit.data.AppDatabase
-import com.today.habit.data.HabitRepository
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HandDrawnSun
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.viewmodel.HabitViewModel
-import com.today.habit.ui.viewmodel.HabitViewModelFactory
 import java.time.LocalDate
 import com.today.habit.ui.theme.ThemeGreen
 import com.today.habit.ui.theme.ThemeGreenDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatsScreen() {
-    val context = LocalContext.current
-    val database = AppDatabase.getDatabase(context)
-    val repository = HabitRepository(database.habitDao())
-    val viewModel: HabitViewModel = viewModel(factory = HabitViewModelFactory(repository))
-
+fun StatsScreen(viewModel: HabitViewModel) {
     val habits by viewModel.allHabits.observeAsState(emptyList())
     val allCheckIns by viewModel.allCheckIns.observeAsState(emptyList())
 

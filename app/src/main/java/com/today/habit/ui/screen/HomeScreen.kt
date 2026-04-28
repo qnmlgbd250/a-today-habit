@@ -49,7 +49,6 @@ import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.viewmodel.HabitViewModel
-import com.today.habit.ui.viewmodel.HabitViewModelFactory
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -60,13 +59,12 @@ import com.today.habit.ui.theme.ThemeGreen
 import com.today.habit.ui.theme.ThemeGreenDark
 import com.today.habit.ui.theme.ThemeGreenLight
 
+import com.today.habit.data.SettingsManager
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     val context = LocalContext.current
-    val database = AppDatabase.getDatabase(context)
-    val repository = HabitRepository(database.habitDao())
-    val viewModel: HabitViewModel = viewModel(factory = HabitViewModelFactory(repository))
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -178,6 +176,22 @@ fun HomeScreen(navController: NavController) {
                                     .border(0.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
                                 offset = androidx.compose.ui.unit.DpOffset(0.dp, 8.dp)
                             ) {
+                                val isDark by viewModel.isDarkTheme
+                                DropdownMenuItem(
+                                    text = { Text(if (isDark) "浅色模式" else "深色模式", fontWeight = FontWeight.Medium) },
+                                    leadingIcon = { 
+                                        Icon(
+                                            if (isDark) Icons.Outlined.LightMode else Icons.Outlined.DarkMode, 
+                                            contentDescription = null, 
+                                            tint = ThemeGreen
+                                        ) 
+                                    },
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.toggleTheme()
+                                    }
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                                 DropdownMenuItem(
                                     text = { Text("新建习惯", fontWeight = FontWeight.Medium) },
                                     leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null, tint = ThemeGreen) },

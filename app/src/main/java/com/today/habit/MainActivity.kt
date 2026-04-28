@@ -19,21 +19,35 @@ import com.today.habit.ui.screen.StatsScreen
 import com.today.habit.ui.screen.ManageHabitsScreen
 import com.today.habit.ui.component.BottomNavigationBar
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.today.habit.data.AppDatabase
+import com.today.habit.data.HabitRepository
+import com.today.habit.data.SettingsManager
+import com.today.habit.ui.viewmodel.HabitViewModel
+import com.today.habit.ui.viewmodel.HabitViewModelFactory
+import androidx.compose.runtime.remember
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ConstantTrackTheme {
-                MainApp()
+            val context = applicationContext
+            val database = AppDatabase.getDatabase(context)
+            val repository = HabitRepository(database.habitDao())
+            val settingsManager = SettingsManager(context)
+            val viewModel: HabitViewModel = viewModel(factory = HabitViewModelFactory(repository, settingsManager))
+            val isDarkTheme by viewModel.isDarkTheme
+
+            ConstantTrackTheme(darkTheme = isDarkTheme) {
+                MainApp(viewModel)
             }
         }
     }
 }
 
 @Composable
-fun MainApp() {
+fun MainApp(viewModel: HabitViewModel) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -51,9 +65,9 @@ fun MainApp() {
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("home") { HomeScreen(navController) }
-            composable("stats") { StatsScreen() }
-            composable("manage_habits") { ManageHabitsScreen(navController) }
+            composable("home") { HomeScreen(navController, viewModel) }
+            composable("stats") { StatsScreen(viewModel) }
+            composable("manage_habits") { ManageHabitsScreen(navController, viewModel) }
         }
     }
 }

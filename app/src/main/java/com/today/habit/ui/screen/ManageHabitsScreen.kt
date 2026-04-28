@@ -25,23 +25,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.today.habit.data.AppDatabase
-import com.today.habit.data.HabitRepository
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.theme.ThemeGreen
 import com.today.habit.ui.theme.ThemeGreenDark
 import com.today.habit.ui.viewmodel.HabitViewModel
-import com.today.habit.ui.viewmodel.HabitViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ManageHabitsScreen(navController: NavController) {
-    val context = LocalContext.current
-    val database = AppDatabase.getDatabase(context)
-    val repository = HabitRepository(database.habitDao())
-    val viewModel: HabitViewModel = viewModel(factory = HabitViewModelFactory(repository))
-    
+fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) {
     val habits by viewModel.allHabits.observeAsState(emptyList())
     
     var habitToEdit by remember { mutableStateOf<Habit?>(null) }

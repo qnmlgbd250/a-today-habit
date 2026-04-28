@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.*
 import com.google.gson.Gson
 import com.today.habit.data.HabitRepository
+import com.today.habit.data.SettingsManager
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import kotlinx.coroutines.flow.Flow
@@ -23,11 +24,23 @@ data class BackupData(
     val records: List<CheckInRecord>
 )
 
-class HabitViewModel(private val repository: HabitRepository) : ViewModel() {
+class HabitViewModel(
+    private val repository: HabitRepository,
+    private val settingsManager: SettingsManager
+) : ViewModel() {
     private val gson = Gson()
 
     private val _selectedDate = mutableStateOf(LocalDate.now())
     val selectedDate: State<LocalDate> = _selectedDate
+
+    private val _isDarkTheme = mutableStateOf(settingsManager.isDarkTheme)
+    val isDarkTheme: State<Boolean> = _isDarkTheme
+
+    fun toggleTheme() {
+        val newValue = !_isDarkTheme.value
+        _isDarkTheme.value = newValue
+        settingsManager.isDarkTheme = newValue
+    }
 
     // 记录用户是否手动选择了特定日期
     // 如果为 false，表示用户处于“今日”视图，应该随时间自动跳转
@@ -151,11 +164,14 @@ class HabitViewModel(private val repository: HabitRepository) : ViewModel() {
     }
 }
 
-class HabitViewModelFactory(private val repository: HabitRepository) : ViewModelProvider.Factory {
+class HabitViewModelFactory(
+    private val repository: HabitRepository,
+    private val settingsManager: SettingsManager
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HabitViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return HabitViewModel(repository) as T
+            return HabitViewModel(repository, settingsManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
