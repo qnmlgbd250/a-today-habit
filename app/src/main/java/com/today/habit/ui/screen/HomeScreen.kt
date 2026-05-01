@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -48,6 +50,7 @@ import com.today.habit.data.HabitRepository
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
+import com.today.habit.ui.component.CheckInSoundPlayer
 import com.today.habit.ui.viewmodel.HabitViewModel
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -342,6 +345,7 @@ fun DateSelectionBar(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Uni
 
 @Composable
 fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Unit) {
+    val context = LocalContext.current
     val currentCount = checkInRecord?.count ?: 0
     val targetCount = habit.targetCount
     val isCompleted = currentCount >= targetCount
@@ -358,7 +362,10 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
-            ) { onClick() }
+            ) {
+                CheckInSoundPlayer.playCompletionSound(context)
+                onClick()
+            }
             .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -403,12 +410,22 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
                         tint = ThemeGreenDark
                     )
                 } else {
-                    Icon(
-                        imageVector = HabitIcons.getIcon(habit.icon),
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
+                    val drawableRes = HabitIcons.getDrawableRes(habit.icon)
+                    if (drawableRes != null) {
+                        Icon(
+                            painter = painterResource(drawableRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = HabitIcons.getIcon(habit.icon),
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
                 }
             }
         }
@@ -491,6 +508,26 @@ fun AddHabitDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, St
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(icon, contentDescription = null, tint = if (selectedIcon == name) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+                                }
+                            }
+                        }
+                        HabitIcons.DrawableIconsMap.forEach { (name, drawableRes) ->
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .clip(CircleShape)
+                                        .background(if (selectedIcon == name) ThemeGreen.copy(alpha = 0.15f) else Color.Transparent)
+                                        .border(width = 1.dp, color = if (selectedIcon == name) ThemeGreen else Color.Transparent, shape = CircleShape)
+                                        .clickable { selectedIcon = name }
+                                        .padding(8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(drawableRes),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp)
+                                    )
                                 }
                             }
                         }
