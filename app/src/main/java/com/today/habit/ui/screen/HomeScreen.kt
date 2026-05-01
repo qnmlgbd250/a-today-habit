@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
@@ -526,7 +527,8 @@ fun AddHabitDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, St
                                     Image(
                                         painter = painterResource(drawableRes),
                                         contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(24.dp),
+                                        colorFilter = ColorFilter.tint(if (selectedIcon == name) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant)
                                     )
                                 }
                             }

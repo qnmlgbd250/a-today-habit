@@ -299,7 +299,8 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Un
                                     Image(
                                         painter = painterResource(drawableRes),
                                         contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(24.dp),
+                                        colorFilter = ColorFilter.tint(if (selectedIcon == name) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant)
                                     )
                                 }
                             }
