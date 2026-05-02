@@ -250,22 +250,32 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        if (filteredHabits.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("该日期没有需要完成的习惯", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                modifier = Modifier.padding(padding).fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(filteredHabits) { habit ->
-                    val checkIn = checkIns.find { it.habitId == habit.id }
-                    HabitGridItem(habit, checkIn) {
-                        viewModel.toggleCheckIn(habit.id, selectedDate.toString(), habit.targetCount)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { showDateBar = false }
+        ) {
+            if (filteredHabits.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("该日期没有需要完成的习惯", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(filteredHabits) { habit ->
+                        val checkIn = checkIns.find { it.habitId == habit.id }
+                        HabitGridItem(habit, checkIn) {
+                            viewModel.toggleCheckIn(habit.id, selectedDate.toString(), habit.targetCount)
+                        }
                     }
                 }
             }
