@@ -37,10 +37,11 @@ import com.today.habit.ui.viewmodel.HabitViewModel
 import java.time.LocalDate
 import com.today.habit.ui.theme.ThemeGreen
 import com.today.habit.ui.theme.ThemeGreenDark
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatsScreen(viewModel: HabitViewModel) {
+fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
     val habits by viewModel.allHabits.observeAsState(emptyList())
     val allCheckIns by viewModel.allCheckIns.observeAsState(emptyList())
 
@@ -64,7 +65,7 @@ fun StatsScreen(viewModel: HabitViewModel) {
         ) {
             // 上区：合并热力图
             item {
-                CombinedHeatmapCard(allCheckIns)
+                CombinedHeatmapCard(allCheckIns) { date -> viewModel.setSelectedDate(date); navController.navigate("home") }
             }
 
             // 下区：习惯列表
@@ -77,7 +78,7 @@ fun StatsScreen(viewModel: HabitViewModel) {
 }
 
 @Composable
-fun CombinedHeatmapCard(allCheckIns: List<CheckInRecord>) {
+fun CombinedHeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDate) -> Unit) {
     val checkInCountsByDate = remember(allCheckIns) {
         allCheckIns.groupBy { it.date }.mapValues { it.value.size }
     }
@@ -116,13 +117,13 @@ fun CombinedHeatmapCard(allCheckIns: List<CheckInRecord>) {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            MultiLevelHeatmap(checkInCountsByDate)
+            MultiLevelHeatmap(checkInCountsByDate, onDateClick)
         }
     }
 }
 
 @Composable
-fun MultiLevelHeatmap(countsByDate: Map<String, Int>) {
+fun MultiLevelHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -> Unit) {
     val today = remember { LocalDate.now() }
     val daysToDisplay = 105 
     val dates = remember(today) {
@@ -148,6 +149,7 @@ fun MultiLevelHeatmap(countsByDate: Map<String, Int>) {
                                 .size(13.dp)
                                 .clip(RoundedCornerShape(3.dp))
                                 .background(getHeatmapColor(count))
+                                .clickable { onDateClick(date) }
                         )
                     }
                 }

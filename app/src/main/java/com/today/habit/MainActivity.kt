@@ -1,4 +1,4 @@
-package com.today.habit
+﻿package com.today.habit
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -66,7 +66,7 @@ fun MainApp(viewModel: HabitViewModel) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("home") { HomeScreen(navController, viewModel) }
-            composable("stats") { StatsScreen(viewModel) }
+            composable("stats") { StatsScreen(navController, viewModel) }
             composable("manage_habits") { ManageHabitsScreen(navController, viewModel) }
         }
     }
