@@ -1,4 +1,4 @@
-package com.today.habit.ui.screen
+﻿package com.today.habit.ui.screen
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -175,7 +175,7 @@ fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
     }
     
     val totalCount = completedCheckIns.size
-    val streak = calculateStreak(completedCheckIns)
+    val streak = calculateStreak(habit, completedCheckIns)
     
     // 进度环比例：以21天为一个阶段目标
     val targetDays = 21f
@@ -242,7 +242,7 @@ fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = habit.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    text = "累计打卡 $totalCount 天",
+                    text = "累计打卡 $totalCount 次",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -256,7 +256,7 @@ fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "连续打卡",
+                    text = "连续${when (habit.frequency) { "WEEKLY" -> "周"; "MONTHLY" -> "月"; else -> "打卡" }}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -265,19 +265,53 @@ fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
     }
 }
 
-fun calculateStreak(checkIns: List<CheckInRecord>): Int {
+fun calculateStreak(habit: Habit, checkIns: List<CheckInRecord>): Int {
     if (checkIns.isEmpty()) return 0
-    val dates = checkIns.map { it.date }.toSet()
+    val dates = checkIns.map { LocalDate.parse(it.date) }.toSortedSet()
     var streak = 0
-    var currentDate = LocalDate.now()
-    
-    if (!dates.contains(currentDate.toString())) {
-        currentDate = currentDate.minusDays(1)
-    }
 
-    while (dates.contains(currentDate.toString())) {
-        streak++
-        currentDate = currentDate.minusDays(1)
+    when (habit.frequency) {
+        "MONTHLY" -> {
+            // 按月连续：从当前月往回看，每个月都有打卡记录
+            var year = LocalDate.now().year
+            var month = LocalDate.now().monthValue
+            // 如果本月还没打卡，从上个月开始
+            val thisMonthDates = dates.filter { it.year == year && it.monthValue == month }
+            if (thisMonthDates.isEmpty()) {
+                month--
+                if (month == 0) { month = 12; year-- }
+            }
+            while (dates.any { it.year == year && it.monthValue == month }) {
+                streak++
+                month--
+                if (month == 0) { month = 12; year-- }
+            }
+        }
+        "WEEKLY" -> {
+            // 按周连续：从当前周往回看，每周都有打卡记录
+            val today = LocalDate.now()
+            var weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1) // 本周一
+            // 如果本周还没打卡，从上周开始
+            val thisWeekDates = dates.filter { !it.isBefore(weekStart) && !it.isAfter(weekStart.plusDays(6)) }
+            if (thisWeekDates.isEmpty()) {
+                weekStart = weekStart.minusWeeks(1)
+            }
+            while (dates.any { !it.isBefore(weekStart) && !it.isAfter(weekStart.plusDays(6)) }) {
+                streak++
+                weekStart = weekStart.minusWeeks(1)
+            }
+        }
+        else -> {
+            // DAILY / WEEKDAYS：按天连续
+            var currentDate = LocalDate.now()
+            if (!dates.contains(currentDate)) {
+                currentDate = currentDate.minusDays(1)
+            }
+            while (dates.contains(currentDate)) {
+                streak++
+                currentDate = currentDate.minusDays(1)
+            }
+        }
     }
     return streak
 }

@@ -1,4 +1,4 @@
-package com.today.habit.ui.screen
+﻿package com.today.habit.ui.screen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -380,14 +380,12 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Un
                         OutlinedTextField(
                             value = frequencyValue, 
                             onValueChange = { frequencyValue = it }, 
-                            placeholder = { Text(if(frequency == "WEEKLY") "例如: 1,3,5 (周几)" else "例如: 1,15 (几号)") }, 
+                            placeholder = { Text(if(frequency == "WEEKLY") "例如: 1 3 5 (周几)" else "例如: 1 15 (几号)") }, 
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp), 
                             shape = RoundedCornerShape(12.dp), 
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
                         )
                     }
-                }
-
                 // 底部按钮
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp), 
@@ -414,4 +412,5 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Un
             }
         }
     }
+}
 }

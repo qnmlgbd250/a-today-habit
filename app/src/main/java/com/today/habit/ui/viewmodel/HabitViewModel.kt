@@ -1,4 +1,4 @@
-package com.today.habit.ui.viewmodel
+﻿package com.today.habit.ui.viewmodel
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -76,11 +76,11 @@ class HabitViewModel(
                 }
                 "WEEKLY" -> {
                     val dayOfWeek = date.dayOfWeek.value.toString()
-                    habit.frequencyValue.split(",").contains(dayOfWeek)
+                    habit.frequencyValue.split(" ").contains(dayOfWeek)
                 }
                 "MONTHLY" -> {
                     val dayOfMonth = date.dayOfMonth.toString()
-                    habit.frequencyValue.split(",").contains(dayOfMonth)
+                    habit.frequencyValue.split(" ").contains(dayOfMonth)
                 }
                 else -> true
             }

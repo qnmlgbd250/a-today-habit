@@ -1,4 +1,4 @@
-package com.today.habit.ui.screen
+﻿package com.today.habit.ui.screen
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -587,14 +587,13 @@ fun AddHabitDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, St
                         OutlinedTextField(
                             value = frequencyValue, 
                             onValueChange = { frequencyValue = it }, 
-                            placeholder = { Text(if(frequency == "WEEKLY") "例如: 1,3,5 (周几)" else "例如: 1,15 (几号)") },
+                            placeholder = { Text(if(frequency == "WEEKLY") "例如: 1 3 5 (周几)" else "例如: 1 15 (几号)") },
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                             shape = RoundedCornerShape(12.dp),
                             textStyle = MaterialTheme.typography.bodyMedium,
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
                         )
                     }
-                }
 
                 Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))) {
@@ -606,5 +605,6 @@ fun AddHabitDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, St
                 }
             }
         }
+    }
     }
 }
