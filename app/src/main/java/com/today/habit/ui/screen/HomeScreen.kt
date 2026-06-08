@@ -334,7 +334,7 @@ fun DateSelectionBar(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Uni
                     color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = date.dayOfMonth.toString(),
+                    text = "${date.monthValue}/${date.dayOfMonth}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
