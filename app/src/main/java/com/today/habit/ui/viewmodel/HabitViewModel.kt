@@ -59,10 +59,8 @@ class HabitViewModel(
      */
     fun refreshDateIfNecessary() {
         val today = LocalDate.now()
-        // 如果用户没有手动选择日期，或者当前选择的日期已经过期了
-        if (!isManuallySelected || _selectedDate.value.isBefore(today)) {
+        if (!isManuallySelected) {
             _selectedDate.value = today
-            isManuallySelected = false
         }
     }
 

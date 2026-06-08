@@ -7,6 +7,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -123,6 +125,7 @@ fun CombinedHeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun MultiLevelHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -> Unit) {
     val today = remember { LocalDate.now() }
     val daysToDisplay = 105 
@@ -132,32 +135,48 @@ fun MultiLevelHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -
 
     val rows = 7 
     val cols = daysToDisplay / rows
+    var hoveredDate by remember { mutableStateOf<LocalDate?>(null) }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        for (c in 0 until cols) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                for (r in 0 until rows) {
-                    val index = c * rows + r
-                    if (index < dates.size) {
-                        val date = dates[index]
-                        val count = countsByDate[date.toString()] ?: 0
-                        Box(
-                            modifier = Modifier
-                                .size(13.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(getHeatmapColor(count))
-                                .clickable { onDateClick(date) }
-                        )
+    Column {
+        if (hoveredDate != null) {
+            Text(
+                text = "${hoveredDate!!.monthValue}月${hoveredDate!!.dayOfMonth}日",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            for (c in 0 until cols) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for (r in 0 until rows) {
+                        val index = c * rows + r
+                        if (index < dates.size) {
+                            val date = dates[index]
+                            val count = countsByDate[date.toString()] ?: 0
+                            Box(
+                                modifier = Modifier
+                                    .size(13.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(getHeatmapColor(count))
+                                    .combinedClickable(
+                                        onClick = {
+                                            hoveredDate = null
+                                            onDateClick(date)
+                                        },
+                                        onLongClick = { hoveredDate = date }
+                                    )
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
-
 fun getHeatmapColor(count: Int): Color {
     return when {
         count == 0 -> Color.LightGray.copy(alpha = 0.2f)
