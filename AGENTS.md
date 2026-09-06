@@ -14,13 +14,14 @@
 
 | 组件 | 技术 |
 |------|------|
-| UI | Jetpack Compose (BOM 2024.10.01) + Material3 |
-| 架构 | MVVM（ViewModel + State/LiveData） |
-| 数据库 | Room 2.6.1（KSP 编译） |
+| UI | Jetpack Compose (BOM 2026.08.00，Compose 1.12) + Material3 |
+| 架构 | MVVM（ViewModel + State/LiveData）；主布局为 Box，NavHost 内容通过 `layerBackdrop` 录制为背景层 |
+| 底栏 | 悬浮液态玻璃底栏，基于 [backdrop](https://github.com/Kyant0/AndroidLiquidGlass) 库（`io.github.kyant0:backdrop`，见 `ui/component/BottomNavigationBar.kt`） |
+| 数据库 | Room 2.8.4（KSP 编译） |
 | 导航 | Navigation Compose |
-| 语言 | Kotlin 2.0.21、Coroutines & Flow |
+| 语言 | Kotlin 2.4.10、Coroutines & Flow |
 | 序列化 | Gson（备份/恢复） |
-| 构建 | AGP 8.7.2，依赖统一走 `gradle/libs.versions.toml` |
+| 构建 | AGP 9.4.0 + Gradle 9.6.0（AGP 9 已内置 Kotlin 支持，**不要**再引入 `org.jetbrains.kotlin.android` 插件），依赖统一走 `gradle/libs.versions.toml` |
 
 ## 常用命令
 
@@ -72,7 +73,7 @@ app/src/main/java/com/today/habit/
 
 ## 数据库改动规则
 
-- `AppDatabase` 当前 `version = 3` 且使用 `fallbackToDestructiveMigration()`（会清数据）。
+- `AppDatabase` 当前 `version = 3`（Room 2.8.4，`fallbackToDestructiveMigration(dropAllTables = true)`） 且使用 `fallbackToDestructiveMigration()`（会清数据）。
 - **修改任何 Room 实体（Habit / CheckInRecord）时必须同步递增 database version**，并在提交说明中明确提醒"升级会清除本地数据"。
 - 尽量通过加字段 + 默认值的方式做向后兼容，避免删列/改列名。
 
