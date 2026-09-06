@@ -11,16 +11,12 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.today.habit.ui.component.SFIcons
+import com.today.habit.ui.component.IOSFormTextField
+import com.today.habit.ui.component.IOSPill
 import com.today.habit.ui.theme.ThemeGreen
 
 /**
@@ -66,7 +64,7 @@ fun IconPickerScreen(navController: NavController, selectedKey: String) {
     Scaffold(
         topBar = {
             Column {
-                TopAppBar(
+                CenterAlignedTopAppBar(
                     title = { Text("图标", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
@@ -83,24 +81,17 @@ fun IconPickerScreen(navController: NavController, selectedKey: String) {
                     )
                 )
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    OutlinedTextField(
+                    IOSFormTextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text("搜索图标") },
+                        placeholder = "搜索图标",
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(SFIcons.res("magnifyingglass")),
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ThemeGreen,
-                            focusedLabelColor = ThemeGreen
-                        )
+                        }
                     )
                     LazyRow(
                         modifier = Modifier
@@ -109,16 +100,7 @@ fun IconPickerScreen(navController: NavController, selectedKey: String) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(listOf("全部") + SFIcons.Categories.map { it.first }) { label ->
-                            FilterChip(
-                                selected = category == label,
-                                onClick = { category = label },
-                                label = { Text(label) },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = ThemeGreen,
-                                    selectedLabelColor = androidx.compose.ui.graphics.Color.White
-                                )
-                            )
+                            IOSPill(label = label, selected = category == label, onClick = { category = label })
                         }
                     }
                 }

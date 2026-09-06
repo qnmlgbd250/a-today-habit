@@ -88,81 +88,35 @@ fun MainApp(viewModel: HabitViewModel) {
             drawContent()
         }
 
-        // iOS 风格转场：标签页互切淡入淡出，推入页从右滑入、返回时滑出，
-        // 底层页面随推入/返回做小幅位移动画
-        val tween220 = tween<Float>(220)
+        // 全局 iOS 风格侧滑转场：新页面从右推入，返回时滑出，底层页面做小幅反向位移
         NavHost(
             navController = navController,
             startDestination = "home",
             modifier = Modifier
                 .fillMaxSize()
                 .layerBackdrop(backdrop),
-            enterTransition = { fadeIn(tween220) },
-            exitTransition = { fadeOut(tween220) },
-            popEnterTransition = { fadeIn(tween220) },
-            popExitTransition = { fadeOut(tween220) }
+            enterTransition = { slideInHorizontally(tween(350)) { it } },
+            exitTransition = { slideOutHorizontally(tween(350)) { -it / 4 } },
+            popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
+            popExitTransition = { slideOutHorizontally(tween(350)) { it } }
         ) {
-            composable(
-                "home",
-                exitTransition = {
-                    if (targetState.destination.route == "stats") fadeOut(tween220)
-                    else slideOutHorizontally(tween(320)) { -it / 4 } + fadeOut(tween(320))
-                },
-                popEnterTransition = {
-                    if (initialState.destination.route == "stats") fadeIn(tween220)
-                    else slideInHorizontally(tween(320)) { -it / 4 } + fadeIn(tween(320))
-                }
-            ) { HomeScreen(navController, viewModel) }
-            composable(
-                "stats",
-                exitTransition = {
-                    if (targetState.destination.route == "home") fadeOut(tween220)
-                    else slideOutHorizontally(tween(320)) { -it / 4 } + fadeOut(tween(320))
-                },
-                popEnterTransition = {
-                    if (initialState.destination.route == "home") fadeIn(tween220)
-                    else slideInHorizontally(tween(320)) { -it / 4 } + fadeIn(tween(320))
-                }
-            ) { StatsScreen(navController, viewModel) }
-            composable(
-                "manage_habits",
-                enterTransition = { slideInHorizontally(tween(350)) { it } },
-                exitTransition = { slideOutHorizontally(tween(350)) { -it / 4 } },
-                popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
-                popExitTransition = { slideOutHorizontally(tween(350)) { it } }
-            ) { ManageHabitsScreen(navController, viewModel) }
-            composable(
-                "icon_picker/{selected}",
-                enterTransition = { slideInHorizontally(tween(350)) { it } },
-                exitTransition = { slideOutHorizontally(tween(350)) { -it / 4 } },
-                popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
-                popExitTransition = { slideOutHorizontally(tween(350)) { it } }
-            ) { entry ->
+            composable("home") { HomeScreen(navController, viewModel, backdrop) }
+            composable("stats") { StatsScreen(navController, viewModel) }
+            composable("manage_habits") { ManageHabitsScreen(navController, viewModel) }
+            composable("icon_picker/{selected}") { entry ->
                 IconPickerScreen(
                     navController = navController,
                     selectedKey = entry.arguments?.getString("selected") ?: ""
                 )
             }
-            composable(
-                "habit_edit/{habitId}",
-                enterTransition = { slideInHorizontally(tween(350)) { it } },
-                exitTransition = { slideOutHorizontally(tween(350)) { -it / 4 } },
-                popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
-                popExitTransition = { slideOutHorizontally(tween(350)) { it } }
-            ) { entry ->
+            composable("habit_edit/{habitId}") { entry ->
                 HabitEditScreen(
                     navController = navController,
                     viewModel = viewModel,
                     habitId = entry.arguments?.getString("habitId") ?: "new"
                 )
             }
-            composable(
-                "habit_delete/{habitId}",
-                enterTransition = { slideInHorizontally(tween(350)) { it } },
-                exitTransition = { slideOutHorizontally(tween(350)) { -it / 4 } },
-                popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
-                popExitTransition = { slideOutHorizontally(tween(350)) { it } }
-            ) { entry ->
+            composable("habit_delete/{habitId}") { entry ->
                 DeleteHabitScreen(
                     navController = navController,
                     viewModel = viewModel,

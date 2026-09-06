@@ -8,19 +8,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,6 +30,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.SFIcons
+import com.today.habit.ui.component.IOSFormTextField
+import com.today.habit.ui.component.IOSSegmentedControl
+import com.today.habit.ui.component.IOSSlider
 import com.today.habit.ui.theme.ThemeGreen
 import com.today.habit.ui.viewmodel.HabitViewModel
 
@@ -92,7 +89,7 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text(if (isNew) "新建习惯" else "编辑习惯", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -167,15 +164,10 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
             }
 
             // 名称
-            OutlinedTextField(
+            IOSFormTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("习惯名称") },
-                placeholder = { Text("例如：早起跑步") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
+                placeholder = "例如：早起跑步"
             )
 
             // 目标次数
@@ -195,51 +187,28 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
                     Text(targetLabel, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("$targetCount 次", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = ThemeGreen)
                 }
-                Slider(
+                IOSSlider(
                     value = targetCount.toFloat(),
                     onValueChange = { targetCount = it.toInt() },
                     valueRange = 1f..10f,
                     steps = 8,
-                    modifier = Modifier.height(24.dp),
-                    colors = SliderDefaults.colors(
-                        thumbColor = ThemeGreen,
-                        activeTrackColor = ThemeGreen,
-                        inactiveTrackColor = ThemeGreen.copy(alpha = 0.2f)
-                    )
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            // 重复周期
+            // 重复周期（iOS 分段控制器）
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("重复周期", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月").forEach { (id, label) ->
-                        FilterChip(
-                            selected = frequency == id,
-                            onClick = { frequency = id; if (id == "DAILY" || id == "WEEKDAYS") frequencyValue = "" },
-                            label = { Text(label, fontSize = 13.sp) },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = ThemeGreen,
-                                selectedLabelColor = Color.White,
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            ),
-                            border = null
-                        )
-                    }
-                }
+                IOSSegmentedControl(
+                    options = listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月"),
+                    selected = frequency,
+                    onSelect = { frequency = it; if (it == "DAILY" || it == "WEEKDAYS") frequencyValue = "" }
+                )
                 if (frequency == "WEEKLY" || frequency == "MONTHLY") {
-                    OutlinedTextField(
+                    IOSFormTextField(
                         value = frequencyValue,
                         onValueChange = { frequencyValue = it },
-                        placeholder = { Text(if (frequency == "WEEKLY") "例如: 1 3 5 (周几)" else "例如: 1 15 (几号)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
+                        placeholder = if (frequency == "WEEKLY") "例如: 1 3 5 (周几)" else "例如: 1 15 (几号)"
                     )
                 }
             }

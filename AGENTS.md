@@ -72,8 +72,8 @@ app/src/main/java/com/today/habit/
 
 ## 导航转场规范
 
-- 转场全部在 `MainActivity` 的 `NavHost`/`composable` 上定义：标签页（home/stats）互切为淡入淡出；推入页（manage_habits、icon_picker）从右滑入，返回时滑出，底层页面随之做 1/4 位移动画（iOS push/pop 风格）。
-- 新增二级页面时必须定义同款 `enterTransition/popExitTransition` 等四个转场。
+- **全局统一侧滑转场**：在 `MainActivity` 的 `NavHost` 上定义（新页面从右推入、返回滑出、底层页面 1/4 位移），标签页互切也不例外，页面级不要单独覆盖。
+- 新增页面无需再写转场参数，直接加 `composable` 即可。
 - `AndroidManifest.xml` 已开启 `android:enableOnBackInvokedCallback="true"` 以支持系统返回手势，勿移除。
 - 页面内跨导航需要保留的状态用 `rememberSaveable`（如弹窗草稿、编辑目标 id）。
 
@@ -135,6 +135,12 @@ app/src/main/java/com/today/habit/
    ```
    - 上传成功返回 HTTP 201；若返回 403 说明房间后来设置了密码，需向用户索取 `X-Room-Password` 请求头的值。
    - 发版说明文本中写明版本号、versionCode、更新内容，并注明"覆盖安装无需卸载旧版"。
+
+## UI 风格规范（iOS 化，去 Android 化）
+
+- **禁止引入 Material 风格控件**：输入框用 `IOSFormTextField`、分段选择用 `IOSSegmentedControl`、滑块用 `IOSSlider`、筛选胶囊用 `IOSPill`、提示用 `IOSToast`（禁用 `android.widget.Toast`）、弹出菜单用 `IOSMenuCard`/`IOSMenuItem`（液态玻璃卡片，需传入 backdrop），均在 `ui/component/IOSUi.kt`。新增 iOS 组件也放这里。
+- 全局水波纹已在 `Theme.kt` 通过 `LocalIndication provides NoIndication` 关闭（iOS 无 ripple），勿移除。
+- 顶栏统一 `CenterAlignedTopAppBar`（居中标题 + 左返回箭头 + 右动作），背景与页面同色。
 
 ## 其他注意事项
 

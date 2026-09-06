@@ -1,19 +1,17 @@
 package com.today.habit.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,7 +48,7 @@ fun DeleteHabitScreen(navController: NavController, viewModel: HabitViewModel, h
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("删除习惯", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -124,32 +122,42 @@ fun DeleteHabitScreen(navController: NavController, viewModel: HabitViewModel, h
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Button(
-                    onClick = {
-                        if (armed) {
-                            viewModel.deleteHabit(habit)
-                            navController.popBackStack()
-                        } else {
-                            armed = true
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(
-                        if (armed) "确认删除" else "删除习惯",
-                        color = androidx.compose.ui.graphics.Color.White,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                if (armed) {
-                    OutlinedButton(
-                        onClick = { armed = false },
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape = RoundedCornerShape(14.dp)
+                // iOS 列表卡片式操作按钮
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable {
+                                if (armed) {
+                                    viewModel.deleteHabit(habit)
+                                    navController.popBackStack()
+                                } else {
+                                    armed = true
+                                }
+                            }
+                            .padding(vertical = 15.dp)
                     ) {
-                        Text("取消", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            if (armed) "确认删除" else "删除习惯",
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    if (armed) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .clickable { armed = false }
+                                .padding(vertical = 15.dp)
+                        ) {
+                            Text("取消", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                        }
                     }
                 }
             } else {

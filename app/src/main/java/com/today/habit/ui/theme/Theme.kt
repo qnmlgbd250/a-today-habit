@@ -1,12 +1,17 @@
 package com.today.habit.ui.theme
 
 import android.app.Activity
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
@@ -45,8 +50,21 @@ fun ConstantTrackTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+        typography = Typography
+    ) {
+        // 去 Android 化：全局关闭 Material 水波纹（iOS 无 ripple 交互反馈）
+        CompositionLocalProvider(LocalIndication provides NoIndication) {
+            content()
+        }
+    }
 }
+
+/** 空交互反馈实现（无任何视觉回显），替代 Material 水波纹 */
+private object NoIndication : IndicationNodeFactory {
+    override fun create(interactionSource: InteractionSource): Modifier.Node = EmptyNode()
+    override fun equals(other: Any?): Boolean = other === this
+    override fun hashCode(): Int = -1
+}
+
+private class EmptyNode : Modifier.Node()
 

@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
@@ -53,6 +54,11 @@ import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.CheckInSoundPlayer
 import com.today.habit.ui.component.SFIcons
+import com.today.habit.ui.component.IOSMenuCard
+import com.today.habit.ui.component.IOSMenuItem
+import com.today.habit.ui.component.IOSMenuDivider
+import com.today.habit.ui.component.IOSToast
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.today.habit.ui.viewmodel.HabitViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -68,10 +74,11 @@ import com.today.habit.data.SettingsManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
+fun HomeScreen(navController: NavController, viewModel: HabitViewModel, backdrop: LayerBackdrop) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
+    var toastMessage by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -97,10 +104,10 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                             writer.write(json)
                         }
                     }
-                    android.widget.Toast.makeText(context, "备份成功", android.widget.Toast.LENGTH_SHORT).show()
+                    toastMessage = "备份成功"
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    android.widget.Toast.makeText(context, "备份失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                    toastMessage = "备份失败: ${e.message}"
                 }
             }
         }
@@ -117,18 +124,18 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                             val json = reader.readText()
                             viewModel.importDataJson(json) { success, message ->
                                 if (success) {
-                                    android.widget.Toast.makeText(context, "恢复成功", android.widget.Toast.LENGTH_SHORT).show()
+                                    toastMessage = "恢复成功"
                                     val current = viewModel.selectedDate.value
                                     viewModel.setSelectedDate(current)
                                 } else {
-                                    android.widget.Toast.makeText(context, "恢复失败: $message", android.widget.Toast.LENGTH_LONG).show()
+                                    toastMessage = "恢复失败: $message"
                                 }
                             }
                         }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    android.widget.Toast.makeText(context, "文件读取失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                    toastMessage = "文件读取失败: ${e.message}"
                 }
             }
         }
@@ -142,6 +149,15 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     var showDateBar by rememberSaveable { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
 
+    // HUD 自动消失
+    LaunchedEffect(toastMessage) {
+        if (toastMessage != null) {
+            delay(1800)
+            toastMessage = null
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
             Column {
@@ -167,70 +183,8 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                         }
                     },
                     actions = {
-                        Box {
-                            IconButton(onClick = { showMenu = true }) {
-                                Icon(painterResource(SFIcons.res("plus")), contentDescription = "操作")
-                            }
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false },
-                                modifier = Modifier
-                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
-                                offset = androidx.compose.ui.unit.DpOffset(0.dp, 8.dp)
-                            ) {
-                                val isDark by viewModel.isDarkTheme
-                                DropdownMenuItem(
-                                    text = { Text(if (isDark) "浅色模式" else "深色模式", fontWeight = FontWeight.Medium) },
-                                    leadingIcon = {
-                                        Icon(
-                                            painterResource(SFIcons.res(if (isDark) "sun.max" else "moon")),
-                                            contentDescription = null,
-                                            tint = ThemeGreen
-                                        )
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        viewModel.toggleTheme()
-                                    }
-                                )
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                                DropdownMenuItem(
-                                    text = { Text("新建习惯", fontWeight = FontWeight.Medium) },
-                                    leadingIcon = { Icon(painterResource(SFIcons.res("plus")), contentDescription = null, tint = ThemeGreen) },
-                                    onClick = {
-                                        showMenu = false
-                                        navController.navigate("habit_edit/new")
-                                    }
-                                )
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                                DropdownMenuItem(
-                                    text = { Text("管理习惯", fontWeight = FontWeight.Medium) },
-                                    leadingIcon = { Icon(painterResource(SFIcons.res("gearshape")), contentDescription = null, tint = ThemeGreen) },
-                                    onClick = {
-                                        showMenu = false
-                                        navController.navigate("manage_habits")
-                                    }
-                                )
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                                DropdownMenuItem(
-                                    text = { Text("备份数据", fontWeight = FontWeight.Medium) },
-                                    leadingIcon = { Icon(painterResource(SFIcons.res("square.and.arrow.up")), contentDescription = null, tint = ThemeGreen) },
-                                    onClick = {
-                                        showMenu = false
-                                        exportLauncher.launch("habit_backup_${LocalDate.now()}.json")
-                                    }
-                                )
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                                DropdownMenuItem(
-                                    text = { Text("恢复数据", fontWeight = FontWeight.Medium) },
-                                    leadingIcon = { Icon(painterResource(SFIcons.res("clock.arrow.circlepath")), contentDescription = null, tint = ThemeGreen) },
-                                    onClick = {
-                                        showMenu = false
-                                        importLauncher.launch(arrayOf("application/json"))
-                                    }
-                                )
-                            }
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(painterResource(SFIcons.res("plus")), contentDescription = "操作")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -279,6 +233,56 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                 }
             }
         }
+    }
+
+    // iOS 拉下式玻璃菜单（替代 Material DropdownMenu）
+    if (showMenu) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.08f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { showMenu = false }
+        )
+        val isDark by viewModel.isDarkTheme
+        IOSMenuCard(
+            backdrop = backdrop,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(top = 48.dp, end = 16.dp)
+        ) {
+            IOSMenuItem(if (isDark) "sun.max" else "moon", if (isDark) "浅色模式" else "深色模式") {
+                showMenu = false
+                viewModel.toggleTheme()
+            }
+            IOSMenuDivider()
+            IOSMenuItem("plus", "新建习惯") {
+                showMenu = false
+                navController.navigate("habit_edit/new")
+            }
+            IOSMenuDivider()
+            IOSMenuItem("gearshape", "管理习惯") {
+                showMenu = false
+                navController.navigate("manage_habits")
+            }
+            IOSMenuDivider()
+            IOSMenuItem("square.and.arrow.up", "备份数据") {
+                showMenu = false
+                exportLauncher.launch("habit_backup_${LocalDate.now()}.json")
+            }
+            IOSMenuDivider()
+            IOSMenuItem("clock.arrow.circlepath", "恢复数据") {
+                showMenu = false
+                importLauncher.launch(arrayOf("application/json"))
+            }
+        }
+    }
+
+    // iOS 风格 HUD 提示
+    IOSToast(toastMessage)
     }
 }
 
