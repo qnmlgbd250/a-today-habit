@@ -6,8 +6,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +31,7 @@ import com.today.habit.ui.theme.ConstantTrackTheme
 import com.today.habit.ui.screen.HomeScreen
 import com.today.habit.ui.screen.StatsScreen
 import com.today.habit.ui.screen.ManageHabitsScreen
+import com.today.habit.ui.screen.IconPickerScreen
 import com.today.habit.ui.component.GlassBottomNavigationBar
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -63,6 +67,8 @@ fun MainApp(viewModel: HabitViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val backgroundColor = MaterialTheme.colorScheme.background
+    // 全屏页面（无底栏）：管理习惯、图标选择
+    val isFullScreenPage = currentRoute == "manage_habits" || currentRoute?.startsWith("icon_picker") == true
 
     Box(
         Modifier
@@ -75,20 +81,65 @@ fun MainApp(viewModel: HabitViewModel) {
             drawContent()
         }
 
+        // iOS 风格转场：标签页互切淡入淡出，推入页从右滑入、返回时滑出，
+        // 底层页面随推入/返回做小幅位移动画
+        val tween220 = tween<Float>(220)
         NavHost(
             navController = navController,
             startDestination = "home",
             modifier = Modifier
                 .fillMaxSize()
-                .layerBackdrop(backdrop)
+                .layerBackdrop(backdrop),
+            enterTransition = { fadeIn(tween220) },
+            exitTransition = { fadeOut(tween220) },
+            popEnterTransition = { fadeIn(tween220) },
+            popExitTransition = { fadeOut(tween220) }
         ) {
-            composable("home") { HomeScreen(navController, viewModel) }
-            composable("stats") { StatsScreen(navController, viewModel) }
-            composable("manage_habits") { ManageHabitsScreen(navController, viewModel) }
+            composable(
+                "home",
+                exitTransition = {
+                    if (targetState.destination.route == "stats") fadeOut(tween220)
+                    else slideOutHorizontally(tween(320)) { -it / 4 } + fadeOut(tween(320))
+                },
+                popEnterTransition = {
+                    if (initialState.destination.route == "stats") fadeIn(tween220)
+                    else slideInHorizontally(tween(320)) { -it / 4 } + fadeIn(tween(320))
+                }
+            ) { HomeScreen(navController, viewModel) }
+            composable(
+                "stats",
+                exitTransition = {
+                    if (targetState.destination.route == "home") fadeOut(tween220)
+                    else slideOutHorizontally(tween(320)) { -it / 4 } + fadeOut(tween(320))
+                },
+                popEnterTransition = {
+                    if (initialState.destination.route == "home") fadeIn(tween220)
+                    else slideInHorizontally(tween(320)) { -it / 4 } + fadeIn(tween(320))
+                }
+            ) { StatsScreen(navController, viewModel) }
+            composable(
+                "manage_habits",
+                enterTransition = { slideInHorizontally(tween(350)) { it } },
+                exitTransition = { slideOutHorizontally(tween(350)) { -it / 4 } },
+                popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
+                popExitTransition = { slideOutHorizontally(tween(350)) { it } }
+            ) { ManageHabitsScreen(navController, viewModel) }
+            composable(
+                "icon_picker/{selected}",
+                enterTransition = { slideInHorizontally(tween(350)) { it } },
+                exitTransition = { slideOutHorizontally(tween(350)) { -it / 4 } },
+                popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
+                popExitTransition = { slideOutHorizontally(tween(350)) { it } }
+            ) { entry ->
+                IconPickerScreen(
+                    navController = navController,
+                    selectedKey = entry.arguments?.getString("selected") ?: ""
+                )
+            }
         }
 
         androidx.compose.animation.AnimatedVisibility(
-            visible = currentRoute != "manage_habits",
+            visible = !isFullScreenPage,
             modifier = Modifier.align(Alignment.BottomCenter),
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()

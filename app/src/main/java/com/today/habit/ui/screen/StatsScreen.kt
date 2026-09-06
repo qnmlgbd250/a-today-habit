@@ -239,22 +239,12 @@ fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
                 }
                 
                 // 图标
-                val drawableRes = HabitIcons.getDrawableRes(habit.icon)
-                if (drawableRes != null) {
-                    Image(
-                        painter = painterResource(drawableRes),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(if (progress.value >= 1f) ThemeGreenDark else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
-                    )
-                } else {
-                    Icon(
-                        imageVector = HabitIcons.getIcon(habit.icon),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (progress.value >= 1f) ThemeGreenDark else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                    )
-                }
+                Icon(
+                    painter = painterResource(HabitIcons.getRes(habit.icon)),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (progress.value >= 1f) ThemeGreenDark else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                )
             }
             
             Spacer(modifier = Modifier.width(16.dp))

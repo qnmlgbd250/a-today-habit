@@ -1,45 +1,47 @@
 package com.today.habit.ui.component
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.automirrored.outlined.*
-import androidx.compose.ui.graphics.vector.ImageVector
 import com.today.habit.R
 
 object HabitIcons {
     val DefaultIcon = "Sunny"
 
-    val IconsMap = mapOf(
-        "Sunny" to Icons.Outlined.WbSunny,
-        "Book" to Icons.Outlined.AutoStories,
-        "Fitness" to Icons.Outlined.SportsGymnastics,
-        "Water" to Icons.Outlined.LocalDrink,
-        "Coffee" to Icons.Outlined.Coffee,
-        "Eat" to Icons.Outlined.Restaurant,
-        "Run" to Icons.AutoMirrored.Outlined.DirectionsRun,
-        "Walk" to Icons.AutoMirrored.Outlined.DirectionsWalk,
-        "Bike" to Icons.AutoMirrored.Outlined.DirectionsBike,
-        "Sleep" to Icons.Outlined.Bedtime,
-        "Meditation" to Icons.Outlined.SelfImprovement,
-        "Code" to Icons.Outlined.Code,
-        "Work" to Icons.Outlined.BusinessCenter,
-        "Music" to Icons.Outlined.MusicNote,
-        "Art" to Icons.Outlined.Palette,
-        "Language" to Icons.Outlined.Translate,
-        "Money" to Icons.Outlined.Savings,
-        "Movie" to Icons.Outlined.Movie,
-        "Clean" to Icons.Outlined.CleaningServices
+    // 历史版本存储的图标 key -> SF Symbols 名称
+    private val LegacyMap = mapOf(
+        "Sunny" to "sun.max",
+        "Book" to "book",
+        "Fitness" to "dumbbell",
+        "Water" to "drop",
+        "Coffee" to "cup.and.saucer",
+        "Eat" to "fork.knife",
+        "Run" to "figure.run",
+        "Walk" to "figure.walk",
+        "Bike" to "bicycle",
+        "Sleep" to "moon.zzz",
+        "Meditation" to "brain.head.profile",
+        "Code" to "chevron.left.forwardslash.chevron.right",
+        "Work" to "briefcase",
+        "Music" to "music.note",
+        "Art" to "paintpalette",
+        "Language" to "globe",
+        "Money" to "banknote",
+        "Movie" to "film",
+        "Clean" to "sparkles"
     )
 
-    val DrawableIconsMap = mapOf(
+    // 更早期的自定义 drawable 图标
+    private val LegacyDrawables = mapOf(
         "Comb" to R.drawable.ic_habit_comb
     )
 
-    fun getIcon(name: String): ImageVector {
-        return IconsMap[name] ?: Icons.Outlined.WbSunny
+    /** 取图标 drawable 资源：新数据直接存 SF Symbols 名称，旧 key 自动映射 */
+    fun getRes(name: String): Int {
+        LegacyDrawables[name]?.let { return it }
+        return SFIcons.res(LegacyMap[name] ?: name)
     }
 
-    fun getDrawableRes(name: String): Int? {
-        return DrawableIconsMap[name]
+    /** 取图标的注册表 key（旧 key 映射为 SF 名称，用于展示与选择器回显） */
+    fun resKey(name: String): String {
+        if (LegacyDrawables.containsKey(name)) return name
+        return LegacyMap[name] ?: name
     }
 }

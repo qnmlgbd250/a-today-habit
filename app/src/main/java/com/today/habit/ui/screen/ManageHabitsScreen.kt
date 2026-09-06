@@ -1,56 +1,68 @@
 ﻿package com.today.habit.ui.screen
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
+import com.today.habit.ui.component.SFIcons
 import com.today.habit.ui.theme.ThemeGreen
-import com.today.habit.ui.theme.ThemeGreenDark
 import com.today.habit.ui.viewmodel.HabitViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) {
     val habits by viewModel.allHabits.observeAsState(emptyList())
-    
-    var habitToEdit by remember { mutableStateOf<Habit?>(null) }
-    var habitToDelete by remember { mutableStateOf<Habit?>(null) }
+
+    // 用 id 记录编辑/删除目标，跳转图标选择页后状态可恢复
+    var editHabitId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var deleteHabitId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var editIcon by rememberSaveable { mutableStateOf("") }
+    val habitToEdit = habits.find { it.id == editHabitId }
+    val habitToDelete = habits.find { it.id == deleteHabitId }
+
+    // 接收图标选择页回传的结果
+    val pickedIcon = navController.currentBackStackEntry?.savedStateHandle
+        ?.getStateFlow("picked_icon", "")?.collectAsState()?.value
+    LaunchedEffect(pickedIcon) {
+        if (!pickedIcon.isNullOrEmpty()) {
+            editIcon = pickedIcon
+            navController.currentBackStackEntry?.savedStateHandle?.set("picked_icon", "")
+        }
+    }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = { Text("管理习惯", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
-                navigationIcon = { 
-                    IconButton(onClick = { navController.popBackStack() }) { 
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "返回") 
-                    } 
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            painter = painterResource(SFIcons.res("chevron.left")),
+                            contentDescription = "返回",
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -66,15 +78,18 @@ fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) 
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding), 
+                modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 1.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(habits) { habit ->
+                items(habits, key = { it.id }) { habit ->
                     HabitManageItem(
-                        habit = habit, 
-                        onEdit = { habitToEdit = habit }, 
-                        onDelete = { habitToDelete = habit }
+                        habit = habit,
+                        onEdit = {
+                            editHabitId = habit.id
+                            editIcon = ""
+                        },
+                        onDelete = { deleteHabitId = habit.id }
                     )
                 }
             }
@@ -83,31 +98,36 @@ fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) 
 
     if (habitToEdit != null) {
         EditHabitDialog(
-            habit = habitToEdit!!, 
-            onDismiss = { habitToEdit = null }, 
-            onUpdate = { 
+            habit = habitToEdit,
+            icon = editIcon.ifEmpty { habitToEdit.icon },
+            onPickIcon = {
+                navController.currentBackStackEntry?.savedStateHandle?.set("current_icon", editIcon.ifEmpty { habitToEdit.icon })
+                navController.navigate("icon_picker/${editIcon.ifEmpty { habitToEdit.icon }}")
+            },
+            onDismiss = { editHabitId = null },
+            onUpdate = {
                 viewModel.updateHabit(it)
-                habitToEdit = null 
+                editHabitId = null
             }
         )
     }
 
     if (habitToDelete != null) {
         AlertDialog(
-            onDismissRequest = { habitToDelete = null },
+            onDismissRequest = { deleteHabitId = null },
             title = { Text("删除习惯") },
-            text = { Text("确定要删除习惯“${habitToDelete!!.name}”吗？") },
-            confirmButton = { 
+            text = { Text("确定要删除习惯“${habitToDelete.name}”吗？") },
+            confirmButton = {
                 TextButton(
-                    onClick = { 
-                        viewModel.deleteHabit(habitToDelete!!)
-                        habitToDelete = null 
-                    }, 
+                    onClick = {
+                        viewModel.deleteHabit(habitToDelete)
+                        deleteHabitId = null
+                    },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("删除") } 
+                ) { Text("删除") }
             },
-            dismissButton = { 
-                TextButton(onClick = { habitToDelete = null }) { Text("取消") } 
+            dismissButton = {
+                TextButton(onClick = { deleteHabitId = null }) { Text("取消") }
             }
         )
     }
@@ -129,22 +149,12 @@ fun HabitManageItem(habit: Habit, onEdit: () -> Unit, onDelete: () -> Unit) {
                 modifier = Modifier.size(52.dp),
                 contentAlignment = Alignment.Center
             ) {
-                val drawableRes = HabitIcons.getDrawableRes(habit.icon)
-                if (drawableRes != null) {
-                    Image(
-                        painter = painterResource(drawableRes),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
-                    )
-                } else {
-                    Icon(
-                        imageVector = HabitIcons.getIcon(habit.icon),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                    )
-                }
+                Icon(
+                    painter = painterResource(HabitIcons.getRes(habit.icon)),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -177,9 +187,9 @@ fun HabitManageItem(habit: Habit, onEdit: () -> Unit, onDelete: () -> Unit) {
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Edit,
+                        painter = painterResource(SFIcons.res("pencil")),
                         contentDescription = "编辑",
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
                 }
@@ -188,9 +198,9 @@ fun HabitManageItem(habit: Habit, onEdit: () -> Unit, onDelete: () -> Unit) {
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.DeleteOutline,
+                        painter = painterResource(SFIcons.res("trash")),
                         contentDescription = "删除",
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(18.dp),
                         tint = Color.Red
                     )
                 }
@@ -199,14 +209,19 @@ fun HabitManageItem(habit: Habit, onEdit: () -> Unit, onDelete: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Unit) {
-    var name by remember { mutableStateOf(habit.name) }
-    var frequency by remember { mutableStateOf(habit.frequency) }
-    var frequencyValue by remember { mutableStateOf(habit.frequencyValue) }
-    var selectedIcon by remember { mutableStateOf(habit.icon) }
-    var targetCount by remember { mutableStateOf(habit.targetCount) }
+fun EditHabitDialog(
+    habit: Habit,
+    icon: String,
+    onPickIcon: () -> Unit,
+    onDismiss: () -> Unit,
+    onUpdate: (Habit) -> Unit
+) {
+    var name by rememberSaveable(habit.id) { mutableStateOf(habit.name) }
+    var frequency by rememberSaveable(habit.id) { mutableStateOf(habit.frequency) }
+    var frequencyValue by rememberSaveable(habit.id) { mutableStateOf(habit.frequencyValue) }
+    var targetCount by rememberSaveable(habit.id) { mutableStateOf(habit.targetCount) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -235,76 +250,57 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Un
 
                 // 基础信息
                 OutlinedTextField(
-                    value = name, 
-                    onValueChange = { name = it }, 
-                    label = { Text("习惯名称") }, 
-                    modifier = Modifier.fillMaxWidth(), 
-                    shape = RoundedCornerShape(12.dp), 
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("习惯名称") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
                 )
 
-                // 图标选择
+                // 图标选择（跳转图标库页面）
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "选择图标", 
+                        "选择图标",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(), 
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            .clickable { onPickIcon() }
+                            .padding(10.dp)
                     ) {
-                        HabitIcons.IconsMap.forEach { (name, icon) ->
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .size(50.dp)
-                                        .clip(CircleShape)
-                                        .background(if (selectedIcon == name) ThemeGreen.copy(alpha = 0.15f) else Color.Transparent)
-                                        .border(
-                                            width = 1.dp,
-                                            color = if (selectedIcon == name) ThemeGreen else Color.Transparent,
-                                            shape = CircleShape
-                                        )
-                                        .clickable { selectedIcon = name }
-                                        .padding(8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        icon,
-                                        contentDescription = null,
-                                        tint = if (selectedIcon == name) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(ThemeGreen.copy(alpha = 0.15f))
+                        ) {
+                            Icon(
+                                painter = painterResource(HabitIcons.getRes(icon)),
+                                contentDescription = null,
+                                tint = ThemeGreen,
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
-                        HabitIcons.DrawableIconsMap.forEach { (name, drawableRes) ->
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .size(50.dp)
-                                        .clip(CircleShape)
-                                        .background(if (selectedIcon == name) ThemeGreen.copy(alpha = 0.15f) else Color.Transparent)
-                                        .border(
-                                            width = 1.dp,
-                                            color = if (selectedIcon == name) ThemeGreen else Color.Transparent,
-                                            shape = CircleShape
-                                        )
-                                        .clickable { selectedIcon = name }
-                                        .padding(8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Image(
-                                        painter = painterResource(drawableRes),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                        colorFilter = ColorFilter.tint(if (selectedIcon == name) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant)
-                                    )
-                                }
-                            }
-                        }
+                        Text(
+                            SFIcons.label(HabitIcons.resKey(icon)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            painter = painterResource(SFIcons.res("chevron.right")),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp)
+                        )
                     }
                 }
 
@@ -323,12 +319,12 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Un
                             else -> "目标次数 (每日)"
                         }
                         Text(
-                            targetLabel, 
+                            targetLabel,
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            "$targetCount 次", 
+                            "$targetCount 次",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = ThemeGreen
@@ -351,23 +347,23 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Un
                 // 周期选择
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "重复周期", 
+                        "重复周期",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Row(
-                        modifier = Modifier.fillMaxWidth(), 
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月").forEach { (id, label) ->
                             FilterChip(
-                                selected = frequency == id, 
-                                onClick = { frequency = id; if (id == "DAILY" || id == "WEEKDAYS") frequencyValue = "" }, 
-                                label = { Text(label, fontSize = 13.sp) }, 
-                                shape = RoundedCornerShape(12.dp), 
+                                selected = frequency == id,
+                                onClick = { frequency = id; if (id == "DAILY" || id == "WEEKDAYS") frequencyValue = "" },
+                                label = { Text(label, fontSize = 13.sp) },
+                                shape = RoundedCornerShape(12.dp),
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = ThemeGreen, 
+                                    selectedContainerColor = ThemeGreen,
                                     selectedLabelColor = Color.White,
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                                 ),
@@ -375,20 +371,22 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Un
                             )
                         }
                     }
-                    
+
                     if (frequency == "WEEKLY" || frequency == "MONTHLY") {
                         OutlinedTextField(
-                            value = frequencyValue, 
-                            onValueChange = { frequencyValue = it }, 
-                            placeholder = { Text(if(frequency == "WEEKLY") "例如: 1 3 5 (周几)" else "例如: 1 15 (几号)") }, 
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp), 
-                            shape = RoundedCornerShape(12.dp), 
+                            value = frequencyValue,
+                            onValueChange = { frequencyValue = it },
+                            placeholder = { Text(if (frequency == "WEEKLY") "例如: 1 3 5 (周几)" else "例如: 1 15 (几号)") },
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
                         )
                     }
+                }
+
                 // 底部按钮
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp), 
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
@@ -400,17 +398,16 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onUpdate: (Habit) -> Un
                         Text("取消", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Button(
-                        onClick = { onUpdate(habit.copy(name = name, frequency = frequency, frequencyValue = frequencyValue, icon = selectedIcon, targetCount = targetCount)) }, 
-                        enabled = name.isNotBlank(), 
+                        onClick = { onUpdate(habit.copy(name = name, frequency = frequency, frequencyValue = frequencyValue, icon = icon, targetCount = targetCount)) },
+                        enabled = name.isNotBlank(),
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(14.dp), 
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = ThemeGreen)
-                    ) { 
-                        Text("保存") 
+                    ) {
+                        Text("保存")
                     }
                 }
             }
         }
     }
-}
 }

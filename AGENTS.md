@@ -48,7 +48,7 @@
 
 ```
 app/src/main/java/com/today/habit/
-├── MainActivity.kt          # 入口 + 导航宿主
+├── MainActivity.kt          # 入口 + 导航宿主（iOS 风格转场定义于此）
 ├── data/
 │   ├── entity/              # Room 实体（Habit, CheckInRecord）
 │   ├── dao/                 # Room DAO
@@ -56,11 +56,26 @@ app/src/main/java/com/today/habit/
 │   ├── HabitRepository.kt   # 数据仓库
 │   └── SettingsManager.kt   # SharedPreferences 设置
 ├── ui/
-│   ├── screen/              # HomeScreen / ManageHabitsScreen / StatsScreen
-│   ├── component/           # 通用组件（底部导航、图标、音效等）
+│   ├── screen/              # HomeScreen / StatsScreen / ManageHabitsScreen / IconPickerScreen
+│   ├── component/           # 通用组件（玻璃底栏、SFIcons 图标注册表、HabitIcons、音效等）
 │   ├── theme/               # 颜色、主题、字体
 │   └── viewmodel/           # HabitViewModel（唯一的 ViewModel）
 ```
+
+## 图标规范
+
+- 全局图标统一使用 **SF Symbols**（来源 sfsymbols.rakibulism.space，已获授权），**禁止引入 Material Icons**。
+- 图标以 VectorDrawable 形式放在 `res/drawable/sf_<名称>.xml`（由站点 icons.ndjson 的路径数据生成，坐标经 group 平移对齐 viewport）。
+- 通过 `ui/component/SFIcons.kt` 注册表引用：`SFIcons.res("sun.max")` 返回 drawable id，`SFIcons.label()` 返回中文名。新增图标需同时加 drawable 和注册表条目。
+- 习惯图标：`Habit.icon` 字段直接存 SF Symbols 名称；历史遗留 key（"Sunny" 等）由 `HabitIcons.LegacyMap` 自动映射，勿删。
+- 图标选择使用独立页面 `IconPickerScreen`（网格 + 分类 + 搜索），通过 `savedStateHandle` 的 `picked_icon` 键回传结果，**不要用弹窗做图标选择**。
+
+## 导航转场规范
+
+- 转场全部在 `MainActivity` 的 `NavHost`/`composable` 上定义：标签页（home/stats）互切为淡入淡出；推入页（manage_habits、icon_picker）从右滑入，返回时滑出，底层页面随之做 1/4 位移动画（iOS push/pop 风格）。
+- 新增二级页面时必须定义同款 `enterTransition/popExitTransition` 等四个转场。
+- `AndroidManifest.xml` 已开启 `android:enableOnBackInvokedCallback="true"` 以支持系统返回手势，勿移除。
+- 页面内跨导航需要保留的状态用 `rememberSaveable`（如弹窗草稿、编辑目标 id）。
 
 ## 编码规范
 
