@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -49,10 +50,10 @@ fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) 
                 title = { Text("管理习惯", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = { 
                     IconButton(onClick = { navController.popBackStack() }) { 
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "返回") 
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "返回") 
                     } 
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onBackground
                 )

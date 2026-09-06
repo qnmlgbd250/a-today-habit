@@ -53,7 +53,7 @@ import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.CheckInSoundPlayer
 import com.today.habit.ui.viewmodel.HabitViewModel
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import java.time.LocalDate
@@ -234,7 +234,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                             }
                         }
                     },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
                         titleContentColor = MaterialTheme.colorScheme.onBackground
                     )

@@ -2,6 +2,7 @@ package com.today.habit.ui.component
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.today.habit.R
 
@@ -15,9 +16,9 @@ object HabitIcons {
         "Water" to Icons.Outlined.LocalDrink,
         "Coffee" to Icons.Outlined.Coffee,
         "Eat" to Icons.Outlined.Restaurant,
-        "Run" to Icons.Outlined.DirectionsRun,
-        "Walk" to Icons.Outlined.DirectionsWalk,
-        "Bike" to Icons.Outlined.DirectionsBike,
+        "Run" to Icons.AutoMirrored.Outlined.DirectionsRun,
+        "Walk" to Icons.AutoMirrored.Outlined.DirectionsWalk,
+        "Bike" to Icons.AutoMirrored.Outlined.DirectionsBike,
         "Sleep" to Icons.Outlined.Bedtime,
         "Meditation" to Icons.Outlined.SelfImprovement,
         "Code" to Icons.Outlined.Code,
