@@ -6,7 +6,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -43,7 +42,7 @@ fun GlassBottomNavigationBar(
     Row(
         modifier = modifier
             .padding(horizontal = 32.dp)
-            .height(68.dp)
+            .height(56.dp)
             .drawBackdrop(
                 backdrop = backdrop,
                 shape = { RoundedCornerShape(50) },
@@ -64,9 +63,8 @@ fun GlassBottomNavigationBar(
             val isSelected = currentRoute == item.route
             val tint = if (isSelected) MaterialTheme.colorScheme.primary
                        else MaterialTheme.colorScheme.onSurfaceVariant
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -81,12 +79,6 @@ fun GlassBottomNavigationBar(
                     }
             ) {
                 CustomBottomIcon(name = item.route, isSelected = isSelected, color = tint)
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = tint,
-                    maxLines = 1
-                )
             }
         }
     }

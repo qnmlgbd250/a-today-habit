@@ -146,7 +146,6 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
         topBar = {
             Column {
                 CenterAlignedTopAppBar(
-                    windowInsets = WindowInsets(0, 0, 0, 0),
                     title = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
