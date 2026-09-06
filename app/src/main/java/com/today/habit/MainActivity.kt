@@ -32,6 +32,8 @@ import com.today.habit.ui.screen.HomeScreen
 import com.today.habit.ui.screen.StatsScreen
 import com.today.habit.ui.screen.ManageHabitsScreen
 import com.today.habit.ui.screen.IconPickerScreen
+import com.today.habit.ui.screen.HabitEditScreen
+import com.today.habit.ui.screen.DeleteHabitScreen
 import com.today.habit.ui.component.GlassBottomNavigationBar
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -67,8 +69,13 @@ fun MainApp(viewModel: HabitViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val backgroundColor = MaterialTheme.colorScheme.background
-    // 全屏页面（无底栏）：管理习惯、图标选择
-    val isFullScreenPage = currentRoute == "manage_habits" || currentRoute?.startsWith("icon_picker") == true
+    // 全屏页面（无底栏）：管理习惯、图标选择、习惯表单、删除确认
+    val isFullScreenPage = currentRoute != null && (
+        currentRoute == "manage_habits" ||
+            currentRoute.startsWith("icon_picker") ||
+            currentRoute.startsWith("habit_edit") ||
+            currentRoute.startsWith("habit_delete")
+        )
 
     Box(
         Modifier
@@ -134,6 +141,32 @@ fun MainApp(viewModel: HabitViewModel) {
                 IconPickerScreen(
                     navController = navController,
                     selectedKey = entry.arguments?.getString("selected") ?: ""
+                )
+            }
+            composable(
+                "habit_edit/{habitId}",
+                enterTransition = { slideInHorizontally(tween(350)) { it } },
+                exitTransition = { slideOutHorizontally(tween(350)) { -it / 4 } },
+                popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
+                popExitTransition = { slideOutHorizontally(tween(350)) { it } }
+            ) { entry ->
+                HabitEditScreen(
+                    navController = navController,
+                    viewModel = viewModel,
+                    habitId = entry.arguments?.getString("habitId") ?: "new"
+                )
+            }
+            composable(
+                "habit_delete/{habitId}",
+                enterTransition = { slideInHorizontally(tween(350)) { it } },
+                exitTransition = { slideOutHorizontally(tween(350)) { -it / 4 } },
+                popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
+                popExitTransition = { slideOutHorizontally(tween(350)) { it } }
+            ) { entry ->
+                DeleteHabitScreen(
+                    navController = navController,
+                    viewModel = viewModel,
+                    habitId = entry.arguments?.getString("habitId") ?: ""
                 )
             }
         }

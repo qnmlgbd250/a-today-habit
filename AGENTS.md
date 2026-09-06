@@ -65,10 +65,10 @@ app/src/main/java/com/today/habit/
 ## 图标规范
 
 - 全局图标统一使用 **SF Symbols**（来源 sfsymbols.rakibulism.space，已获授权），**禁止引入 Material Icons**。
-- 图标以 VectorDrawable 形式放在 `res/drawable/sf_<名称>.xml`（由站点 icons.ndjson 的路径数据生成，坐标经 group 平移对齐 viewport）。
+- 图标以 VectorDrawable 形式放在 `res/drawable/sf_<名称>.xml`。生成规范：统一 1000×1000 viewport，字形最长边缩放至 750（75% 光学尺寸）并居中——**不要**直接用符号墨迹边界当 viewport（会导致非方形图标被拉伸、大小不一致）。
 - 通过 `ui/component/SFIcons.kt` 注册表引用：`SFIcons.res("sun.max")` 返回 drawable id，`SFIcons.label()` 返回中文名。新增图标需同时加 drawable 和注册表条目。
 - 习惯图标：`Habit.icon` 字段直接存 SF Symbols 名称；历史遗留 key（"Sunny" 等）由 `HabitIcons.LegacyMap` 自动映射，勿删。
-- 图标选择使用独立页面 `IconPickerScreen`（网格 + 分类 + 搜索），通过 `savedStateHandle` 的 `picked_icon` 键回传结果，**不要用弹窗做图标选择**。
+- 全 App **禁止使用 Dialog/AlertDialog**：新建与编辑习惯用 `HabitEditScreen`（路由 `habit_edit/new` 或 `habit_edit/{id}`），删除确认用 `DeleteHabitScreen`（两步确认：第一次点击只进入"确认删除"状态），图标选择用 `IconPickerScreen`。跨页回传统一走 `savedStateHandle` 的 `picked_icon` 键。
 
 ## 导航转场规范
 

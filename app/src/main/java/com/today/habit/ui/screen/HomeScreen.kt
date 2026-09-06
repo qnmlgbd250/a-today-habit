@@ -44,7 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.today.habit.data.AppDatabase
@@ -141,20 +140,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     val filteredHabits = viewModel.getFilteredHabits(allHabits, selectedDate)
     
     var showDateBar by rememberSaveable { mutableStateOf(false) }
-    var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
-    // 新建习惯时选中的图标（跳转图标选择页后需保留）
-    var addIcon by rememberSaveable { mutableStateOf(HabitIcons.DefaultIcon) }
-
-    // 接收图标选择页回传的结果
-    val pickedIcon = navController.currentBackStackEntry?.savedStateHandle
-        ?.getStateFlow("picked_icon", "")?.collectAsState()?.value
-    LaunchedEffect(pickedIcon) {
-        if (!pickedIcon.isNullOrEmpty()) {
-            addIcon = pickedIcon
-            navController.currentBackStackEntry?.savedStateHandle?.set("picked_icon", "")
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -214,7 +200,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                                     leadingIcon = { Icon(painterResource(SFIcons.res("plus")), contentDescription = null, tint = ThemeGreen) },
                                     onClick = {
                                         showMenu = false
-                                        showAddDialog = true
+                                        navController.navigate("habit_edit/new")
                                     }
                                 )
                                 HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
@@ -293,22 +279,6 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                 }
             }
         }
-    }
-
-    if (showAddDialog) {
-        AddHabitDialog(
-            icon = addIcon,
-            onPickIcon = {
-                navController.currentBackStackEntry?.savedStateHandle?.set("current_icon", addIcon)
-                navController.navigate("icon_picker/$addIcon")
-            },
-            onDismiss = { showAddDialog = false },
-            onConfirm = { name, desc, freq, freqVal, icon, target ->
-                viewModel.insertHabit(name, desc, freq, freqVal, icon, target)
-                showAddDialog = false
-                addIcon = HabitIcons.DefaultIcon
-            }
-        )
     }
 }
 
@@ -462,159 +432,5 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
             style = MaterialTheme.typography.labelSmall,
             color = if (isCompleted) ThemeGreenDark else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Composable
-fun AddHabitDialog(
-    icon: String,
-    onPickIcon: () -> Unit,
-    onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String, String, Int) -> Unit
-) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var frequency by rememberSaveable { mutableStateOf("DAILY") }
-    var frequencyValue by rememberSaveable { mutableStateOf("") }
-    var targetCount by rememberSaveable { mutableStateOf(1) }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 24.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                Text(
-                    "新建习惯",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-                
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = name, 
-                        onValueChange = { name = it }, 
-                        label = { Text("习惯名称") },
-                        placeholder = { Text("例如：早起跑步") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
-                    )
-                }
-                
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("选择图标", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                            .clickable { onPickIcon() }
-                            .padding(10.dp)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(ThemeGreen.copy(alpha = 0.15f))
-                        ) {
-                            Icon(
-                                painter = painterResource(HabitIcons.getRes(icon)),
-                                contentDescription = null,
-                                tint = ThemeGreen,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Text(
-                            SFIcons.label(HabitIcons.resKey(icon)),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(
-                            painter = painterResource(SFIcons.res("chevron.right")),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        val targetLabel = when (frequency) {
-                            "DAILY" -> "目标次数 (每日)"
-                            "WEEKDAYS" -> "目标次数 (工作日)"
-                            "WEEKLY" -> "目标次数 (每周)"
-                            "MONTHLY" -> "目标次数 (每月)"
-                            else -> "目标次数 (每日)"
-                        }
-                        Text(targetLabel, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$targetCount 次", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = ThemeGreen)
-                    }
-                    Slider(
-                        value = targetCount.toFloat(),
-                        onValueChange = { targetCount = it.toInt() },
-                        valueRange = 1f..10f,
-                        steps = 8,
-                        modifier = Modifier.height(24.dp),
-                        colors = SliderDefaults.colors(thumbColor = ThemeGreen, activeTrackColor = ThemeGreen, inactiveTrackColor = ThemeGreen.copy(alpha = 0.2f))
-                    )
-                }
-                
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("重复周期", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月").forEach { (id, label) ->
-                            FilterChip(
-                                selected = frequency == id,
-                                onClick = { frequency = id; frequencyValue = "" },
-                                label = { Text(label, fontSize = 13.sp) },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = ThemeGreen, selectedLabelColor = Color.White, containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                                border = null
-                            )
-                        }
-                    }
-                    
-                    if (frequency == "WEEKLY" || frequency == "MONTHLY") {
-                        OutlinedTextField(
-                            value = frequencyValue, 
-                            onValueChange = { frequencyValue = it }, 
-                            placeholder = { Text(if(frequency == "WEEKLY") "例如: 1 3 5 (周几)" else "例如: 1 15 (几号)") },
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            textStyle = MaterialTheme.typography.bodyMedium,
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ThemeGreen, focusedLabelColor = ThemeGreen)
-                        )
-                    }
-
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))) {
-                        Text("取消", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Button(onClick = { onConfirm(name, "", frequency, frequencyValue, icon, targetCount) }, enabled = name.isNotBlank(), modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = ThemeGreen)) {
-                        Text("创建")
-                    }
-                }
-            }
-        }
-    }
     }
 }
