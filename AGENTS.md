@@ -7,7 +7,7 @@
 「小日常」（A Today Habit）— 一款极简习惯打卡 Android 应用。
 
 - **包名 / applicationId**：`com.today.habit`（Gradle rootProject 名为 `ConstantTrack`，勿混淆）
-- **minSdk 26 / target & compileSdk 35**，JVM target 11
+- **mineSdk**，JVM target 11
 - **UI 语言为中文**，面向用户的所有文案使用中文
 
 ## 技术栈
@@ -73,7 +73,7 @@ app/src/main/java/com/today/habit/
 
 ## 数据库改动规则
 
-- `AppDatabase` 当前 `version = 3`（Room 2.8.4，`fallbackToDestructiveMigration(dropAllTables = true)`） 且使用 `fallbackToDestructiveMigration()`（会清数据）。
+- `AppDatabase` 当前 `version = 3`（Room 2.8.4，`fallbackToDestructiveMigration(dropAllTables = true)`，升级清空本地数据）。
 - **修改任何 Room 实体（Habit / CheckInRecord）时必须同步递增 database version**，并在提交说明中明确提醒"升级会清除本地数据"。
 - 尽量通过加字段 + 默认值的方式做向后兼容，避免删列/改列名。
 
@@ -82,6 +82,44 @@ app/src/main/java/com/today/habit/
 - 每次**发版提交必须同步修改** `app/build.gradle.kts` 中的 `versionCode`（+1）和 `versionName`。
 - **Commit message 格式**：`vX.Y.Z: 中文变更描述`，例如 `v1.0.39: 日期选择栏显示月/日`。
 - 日常开发提交也使用简洁的中文描述。
+
+## 发版流程
+
+以下命令均在 Git Bash 中执行（Windows 环境）。
+
+1. **升版本**：`app/build.gradle.kts` 中 `versionCode` +1、`versionName` 递增，按上面的格式提交。
+
+2. **构建 release**（依赖要求 compileSdk ≥ 37，AGP 报错信息里会提示）：
+   ```bash
+   JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" ./gradlew assembleRelease
+   ```
+
+3. **对齐 + 签名**（沿用用户 debug keystore，证书 SHA-256 为 `775daca9...`，与历史版本一致，用户可覆盖安装）：
+   ```bash
+   BT="C:\Users\ttt\AppData\Local\Android\Sdk\build-tools\36.0.0"
+   OUT="app\build\outputs\apk\release"
+   "$BT/zipalign.exe" -f 4 "$OUT/app-release-unsigned.apk" "$OUT/aligned.apk"
+   "$BT/apksigner.bat" sign \
+     --ks "C:\Users\ttt\.android\debug.keystore" \
+     --ks-pass pass:android --ks-key-alias androiddebugkey \
+     --out "$OUT/小日常-<版本>.apk" "$OUT/aligned.apk"
+   # 校验：应输出 CN=Android Debug，SHA-256 指纹 775daca9...
+   "$BT/apksigner.bat" verify --print-certs "$OUT/小日常-<版本>.apk"
+   ```
+
+4. **发布到云剪贴板**（房间地址：http://8.148.25.234:5000/r/sky ，内容 20 天有效）：
+   ```bash
+   # 上传 APK（multipart，字段名固定为 file）
+   curl -X POST "http://8.148.25.234:5000/api/files?room=sky" \
+     -F "file=@app/build/outputs/apk/release/小日常-<版本>.apk"
+
+   # 发送发版说明文本（JSON）
+   curl -X POST "http://8.148.25.234:5000/api/items?room=sky" \
+     -H "Content-Type: application/json" \
+     -d '{"content": "【小日常 vX.Y.Z 发版】..."}'
+   ```
+   - 上传成功返回 HTTP 201；若返回 403 说明房间后来设置了密码，需向用户索取 `X-Room-Password` 请求头的值。
+   - 发版说明文本中写明版本号、versionCode、更新内容，并注明"覆盖安装无需卸载旧版"。
 
 ## 其他注意事项
 
