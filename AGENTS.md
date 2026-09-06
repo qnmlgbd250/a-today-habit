@@ -74,7 +74,7 @@ app/src/main/java/com/today/habit/
 
 - **全局统一侧滑转场**：在 `MainActivity` 的 `NavHost` 上定义（新页面从右推入、返回滑出、底层页面 1/4 位移），标签页互切也不例外，页面级不要单独覆盖。
 - 新增页面无需再写转场参数，直接加 `composable` 即可。
-- `AndroidManifest.xml` 已开启 `android:enableOnBackInvokedCallback="true"` 以支持系统返回手势，勿移除。
+- **勿开启** `android:enableOnBackInvokedCallback`：开启后手势返回会先播放系统预测性返回的整窗缩小+淡出预览动画，与应用内侧滑转场叠加，观感割裂（已因此回退过一次）。应用内返回动画由 NavHost 的 pop 转场负责。
 - 页面内跨导航需要保留的状态用 `rememberSaveable`（如弹窗草稿、编辑目标 id）。
 
 ## 编码规范
