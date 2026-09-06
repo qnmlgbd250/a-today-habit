@@ -219,7 +219,7 @@ fun IOSMenuCard(
             .shadow(18.dp, RoundedCornerShape(14.dp), spotColor = Color.Black.copy(alpha = 0.25f))
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f), RoundedCornerShape(14.dp))
             .border(0.5.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
-            .width(224.dp)
+            .width(184.dp)
             .padding(vertical = 5.dp),
         content = content
     )

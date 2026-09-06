@@ -125,16 +125,17 @@ fun MainApp(viewModel: HabitViewModel) {
             }
         }
 
+        // 底栏显隐用与页面转场同时长的纯淡入淡出，避免与侧滑转场打架
         androidx.compose.animation.AnimatedVisibility(
             visible = !isFullScreenPage,
             modifier = Modifier.align(Alignment.BottomCenter),
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+            enter = fadeIn(tween(350)),
+            exit = fadeOut(tween(350))
         ) {
             GlassBottomNavigationBar(
                 navController = navController,
                 backdrop = backdrop,
-                modifier = Modifier.navigationBarsPadding().padding(bottom = 8.dp)
+                modifier = Modifier.navigationBarsPadding().padding(bottom = 20.dp)
             )
         }
     }
