@@ -19,16 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
 import com.today.habit.ui.theme.ThemeGreen
 
 /** iOS 风格填充式输入框：无描边、圆角灰底，聚焦光标为主题色 */
@@ -208,31 +204,21 @@ fun IOSToast(message: String?, modifier: Modifier = Modifier) {
     }
 }
 
-/** iOS 拉下式菜单卡片：液态玻璃质感，替代 Material DropdownMenu */
+/**
+ * iOS 拉下式菜单卡片，替代 Material DropdownMenu。
+ * 注意：不能用 drawBackdrop 取样 NavHost 背景——菜单位于被录制图层内部会形成自引用循环，
+ * 触发 RenderThread SIGSEGV 闪退（backdrop 库已知问题），故用带阴影的半透明表面实现。
+ */
 @Composable
 fun IOSMenuCard(
-    backdrop: LayerBackdrop,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val surfaceColor = MaterialTheme.colorScheme.surface
     Column(
         modifier = modifier
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { RoundedCornerShape(14.dp) },
-                effects = {
-                    vibrancy()
-                    blur(4f.dp.toPx())
-                    lens(8f.dp.toPx(), 16f.dp.toPx())
-                },
-                onDrawSurface = { drawRect(surfaceColor.copy(alpha = 0.62f)) }
-            )
-            .border(
-                0.5.dp,
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                RoundedCornerShape(14.dp)
-            )
+            .shadow(18.dp, RoundedCornerShape(14.dp), spotColor = Color.Black.copy(alpha = 0.25f))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f), RoundedCornerShape(14.dp))
+            .border(0.5.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
             .width(224.dp)
             .padding(vertical = 5.dp),
         content = content

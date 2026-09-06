@@ -58,7 +58,6 @@ import com.today.habit.ui.component.IOSMenuCard
 import com.today.habit.ui.component.IOSMenuItem
 import com.today.habit.ui.component.IOSMenuDivider
 import com.today.habit.ui.component.IOSToast
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.today.habit.ui.viewmodel.HabitViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -74,7 +73,7 @@ import com.today.habit.data.SettingsManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController, viewModel: HabitViewModel, backdrop: LayerBackdrop) {
+fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -248,7 +247,6 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel, backdrop
         )
         val isDark by viewModel.isDarkTheme
         IOSMenuCard(
-            backdrop = backdrop,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()

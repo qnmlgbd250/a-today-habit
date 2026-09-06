@@ -100,7 +100,7 @@ fun MainApp(viewModel: HabitViewModel) {
             popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
             popExitTransition = { slideOutHorizontally(tween(350)) { it } }
         ) {
-            composable("home") { HomeScreen(navController, viewModel, backdrop) }
+            composable("home") { HomeScreen(navController, viewModel) }
             composable("stats") { StatsScreen(navController, viewModel) }
             composable("manage_habits") { ManageHabitsScreen(navController, viewModel) }
             composable("icon_picker/{selected}") { entry ->
