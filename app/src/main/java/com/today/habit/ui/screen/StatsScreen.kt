@@ -1,200 +1,154 @@
-package com.today.habit.ui.screen
+﻿package com.today.habit.ui.screen
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
-import com.today.habit.ui.component.AuroraBackground
-import com.today.habit.ui.component.HabitTile
+import com.today.habit.ui.component.HandDrawnSun
 import com.today.habit.ui.component.HabitIcons
-import com.today.habit.ui.component.InsetGroup
-import com.today.habit.ui.component.LargeTitleHeader
-import com.today.habit.ui.component.SFIcons
-import com.today.habit.ui.component.SectionLabel
-import com.today.habit.ui.component.StatBlock
-import com.today.habit.ui.component.accent
-import com.today.habit.ui.component.isDark
-import com.today.habit.ui.component.staggerIn
-import com.today.habit.ui.theme.Body17
-import com.today.habit.ui.theme.Footnote13
-import com.today.habit.ui.theme.Headline17
-import com.today.habit.ui.theme.TabularNum
 import com.today.habit.ui.viewmodel.HabitViewModel
 import java.time.LocalDate
+import com.today.habit.ui.theme.ThemeGreen
+import com.today.habit.ui.theme.ThemeGreenDark
+import androidx.navigation.NavController
 
-/**
- * 统计页 3.0：Screen Time 式数字组 + 月份热力图 + 分组榜单。
- * 高级感：等宽数字、发丝分隔、纯平热力、克制的火焰点缀。
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
     val habits by viewModel.allHabits.observeAsState(emptyList())
     val allCheckIns by viewModel.allCheckIns.observeAsState(emptyList())
-    val dark = isDark()
 
-    val totalCheckIns = allCheckIns.size
-    val activeDays = remember(allCheckIns) { allCheckIns.map { it.date }.toSet().size }
-    val bestStreak = remember(habits, allCheckIns) {
-        habits.maxOfOrNull { h ->
-            val mine = allCheckIns.filter { it.habitId == h.id && it.count >= h.targetCount }
-            calculateStreak(h, mine)
-        } ?: 0
-    }
-
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        AuroraBackground(dark = dark)
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("统计回顾", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            modifier = Modifier.padding(padding).fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 112.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // 上区：合并热力图
             item {
-                Spacer(Modifier.statusBarsPadding().height(10.dp))
-                LargeTitleHeader(title = "统计回顾", subtitle = "每一次坚持都有痕迹")
-                Spacer(Modifier.height(14.dp))
+                CombinedHeatmapCard(allCheckIns) { date -> viewModel.setSelectedDate(date); navController.navigate("home") }
             }
-            item {
-                InsetGroup {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        StatBlock("$totalCheckIns", "累计打卡", Modifier.weight(1f))
-                        Box(Modifier.width(0.5.dp).height(44.dp).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)))
-                        StatBlock("$activeDays", "坚持天数", Modifier.weight(1f))
-                        Box(Modifier.width(0.5.dp).height(44.dp).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)))
-                        StatBlock("$bestStreak", "最高连击", Modifier.weight(1f))
-                    }
-                }
-            }
-            item { SectionLabel("打卡热力图") }
-            item {
-                InsetGroup {
-                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                        HeatLegend()
-                        Spacer(Modifier.height(10.dp))
-                        RefinedHeatmap(
-                            countsByDate = remember(allCheckIns) {
-                                allCheckIns.groupBy { it.date }.mapValues { it.value.size }
-                            },
-                            onDateClick = { date -> viewModel.setSelectedDate(date); navController.navigate("home") }
-                        )
-                    }
-                }
-            }
-            item { SectionLabel("习惯") }
-            if (habits.isEmpty()) {
-                item {
-                    InsetGroup {
-                        Text(
-                            "还没有习惯数据",
-                            style = Footnote13,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth().padding(16.dp)
-                        )
-                    }
-                }
-            } else {
-                itemsIndexed(habits, key = { _, h -> h.id }) { index, habit ->
-                    val habitCheckIns by viewModel.getCheckInsByHabitId(habit.id).collectAsState(emptyList())
-                    InsetGroup(Modifier.staggerIn(index)) {
-                        StatRow(habit, habitCheckIns)
-                    }
-                    if (index < habits.size - 1) Spacer(Modifier.height(10.dp))
-                }
+
+            // 下区：习惯列表
+            items(habits, key = { it.id }) { habit ->
+                val habitCheckIns by viewModel.getCheckInsByHabitId(habit.id).collectAsState(emptyList())
+                HabitStatsItem(habit, habitCheckIns)
             }
         }
     }
 }
 
 @Composable
-private fun HeatLegend() {
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+fun CombinedHeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDate) -> Unit) {
+    val checkInCountsByDate = remember(allCheckIns) {
+        allCheckIns.groupBy { it.date }.mapValues { it.value.size }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
-        Text("近 15 周", style = Headline17, color = MaterialTheme.colorScheme.onBackground)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("少", style = Footnote13, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.width(4.dp))
-            listOf(0, 1, 3, 5, 7).forEach { level ->
-                Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(getHeatmapColor(level)))
-                Spacer(Modifier.width(3.dp))
+        Column(modifier = Modifier.padding(20.dp)) {
+            // 标题与图例并排显示在顶部
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "打卡热力图", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                
+                // 图例
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("少", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    listOf(0, 1, 3, 5, 7).forEach { level ->
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(getHeatmapColor(level))
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                    }
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text("多", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-            Text("多", style = Footnote13, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            MultiLevelHeatmap(checkInCountsByDate, onDateClick)
         }
     }
 }
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-private fun RefinedHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -> Unit) {
+fun MultiLevelHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -> Unit) {
     val today = remember { LocalDate.now() }
-    val daysToDisplay = 105
-    val dates = remember(today) { (0 until daysToDisplay).map { today.minusDays(it.toLong()) }.reversed() }
-    val rows = 7
+    val daysToDisplay = 105 
+    val dates = remember(today) {
+        (0 until daysToDisplay).map { today.minusDays(it.toLong()) }.reversed()
+    }
+
+    val rows = 7 
     val cols = daysToDisplay / rows
     var hoveredDate by remember { mutableStateOf<LocalDate?>(null) }
 
     Column {
-        // 月份标签（与下方列严格对齐）
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            for (c in 0 until cols) {
-                val first = dates[c * rows]
-                val show = c == 0 || first.monthValue != dates[(c - 1) * rows].monthValue
-                Box(Modifier.width(13.dp), contentAlignment = Alignment.Center) {
-                    if (show) {
-                        Text(
-                            "${first.monthValue}月", fontSize = 9.sp, softWrap = false,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.height(4.dp))
         if (hoveredDate != null) {
             Text(
-                "${hoveredDate!!.monthValue}月${hoveredDate!!.dayOfMonth}日",
-                style = Footnote13,
+                text = "${hoveredDate!!.monthValue}月${hoveredDate!!.dayOfMonth}日",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 6.dp)
+                modifier = Modifier.padding(bottom = 4.dp)
             )
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             for (c in 0 until cols) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     for (r in 0 until rows) {
@@ -203,10 +157,15 @@ private fun RefinedHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDa
                             val date = dates[index]
                             val count = countsByDate[date.toString()] ?: 0
                             Box(
-                                Modifier.size(13.dp).clip(RoundedCornerShape(4.dp))
+                                modifier = Modifier
+                                    .size(13.dp)
+                                    .clip(RoundedCornerShape(3.dp))
                                     .background(getHeatmapColor(count))
                                     .combinedClickable(
-                                        onClick = { hoveredDate = null; onDateClick(date) },
+                                        onClick = {
+                                            hoveredDate = null
+                                            onDateClick(date)
+                                        },
                                         onLongClick = { hoveredDate = date }
                                     )
                             )
@@ -217,51 +176,101 @@ private fun RefinedHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDa
         }
     }
 }
-
-@Composable
 fun getHeatmapColor(count: Int): Color {
-    val dark = isDark()
-    if (count == 0) return MaterialTheme.colorScheme.onSurface.copy(alpha = if (dark) 0.14f else 0.08f)
     return when {
-        count <= 2 -> Color(0xFFA8E0AC)
-        count <= 4 -> Color(0xFF6FCE77)
-        count <= 6 -> Color(0xFF34C759)
-        count <= 8 -> Color(0xFF248A3D)
-        else -> Color(0xFF14532D)
+        count == 0 -> Color.LightGray.copy(alpha = 0.2f)
+        count <= 2 -> Color(0xFFC8E6C9) 
+        count <= 4 -> Color(0xFF81C784) 
+        count <= 6 -> Color(0xFF4CAF50) 
+        count <= 8 -> Color(0xFF2E7D32) 
+        else -> Color(0xFF1B5E20)       
     }
 }
 
 @Composable
-fun StatRow(habit: Habit, checkIns: List<CheckInRecord>) {
-    val accent = remember(habit.id, habit.color) { habit.accent() }
-    val completed = remember(checkIns, habit.targetCount) { checkIns.filter { it.count >= habit.targetCount } }
-    val total = completed.size
-    val streak = remember(habit, completed) { calculateStreak(habit, completed) }
+fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
+    // 只有打卡次数 >= 目标次数的记录才被视为“已完成”
+    val completedCheckIns = remember(checkIns, habit.targetCount) {
+        checkIns.filter { it.count >= habit.targetCount }
+    }
+    
+    val totalCount = completedCheckIns.size
+    val streak = calculateStreak(habit, completedCheckIns)
+    
+    // 进度环比例：以21天为一个阶段目标
+    val targetDays = 21f
+    val progress = animateFloatAsState(
+        targetValue = (totalCount.toFloat() / targetDays).coerceAtMost(1f),
+        animationSpec = tween(durationMillis = 800),
+        label = "StatsProgress"
+    )
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        HabitTile(iconRes = HabitIcons.getRes(habit.icon), accent = accent)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(habit.name, style = Body17, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
-            Spacer(Modifier.height(1.dp))
-            Text(
-                "累计 $total 次" + if (streak > 0) " · 连续 $streak 天" else "",
-                style = Footnote13,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (streak > 0) {
-            Icon(
-                painter = painterResource(SFIcons.res("flame")),
-                contentDescription = null,
-                tint = Color(0xFFFF9500),
-                modifier = Modifier.size(17.dp)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text("$streak", style = TabularNum, fontSize = 19.sp, color = MaterialTheme.colorScheme.onBackground)
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(52.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // 进度环
+                Canvas(modifier = Modifier.size(48.dp)) {
+                    drawArc(
+                        color = Color.LightGray.copy(alpha = 0.2f),
+                        startAngle = 0f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                    if (progress.value > 0f) {
+                        drawArc(
+                            color = ThemeGreen,
+                            startAngle = -90f,
+                            sweepAngle = 360f * progress.value,
+                            useCenter = false,
+                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                    }
+                }
+                
+                // 图标
+                Icon(
+                    painter = painterResource(HabitIcons.getRes(habit.icon)),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (progress.value >= 1f) ThemeGreenDark else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = habit.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "累计打卡 $totalCount 次",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = streak.toString(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "连续${when (habit.frequency) { "WEEKLY" -> "周"; "MONTHLY" -> "月"; else -> "打卡" }}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -270,11 +279,15 @@ fun calculateStreak(habit: Habit, checkIns: List<CheckInRecord>): Int {
     if (checkIns.isEmpty()) return 0
     val dates = checkIns.map { LocalDate.parse(it.date) }.toSortedSet()
     var streak = 0
+
     when (habit.frequency) {
         "MONTHLY" -> {
+            // 按月连续：从当前月往回看，每个月都有打卡记录
             var year = LocalDate.now().year
             var month = LocalDate.now().monthValue
-            if (dates.none { it.year == year && it.monthValue == month }) {
+            // 如果本月还没打卡，从上个月开始
+            val thisMonthDates = dates.filter { it.year == year && it.monthValue == month }
+            if (thisMonthDates.isEmpty()) {
                 month--
                 if (month == 0) { month = 12; year-- }
             }
@@ -285,9 +298,12 @@ fun calculateStreak(habit: Habit, checkIns: List<CheckInRecord>): Int {
             }
         }
         "WEEKLY" -> {
+            // 按周连续：从当前周往回看，每周都有打卡记录
             val today = LocalDate.now()
-            var weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
-            if (dates.none { !it.isBefore(weekStart) && !it.isAfter(weekStart.plusDays(6)) }) {
+            var weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1) // 本周一
+            // 如果本周还没打卡，从上周开始
+            val thisWeekDates = dates.filter { !it.isBefore(weekStart) && !it.isAfter(weekStart.plusDays(6)) }
+            if (thisWeekDates.isEmpty()) {
                 weekStart = weekStart.minusWeeks(1)
             }
             while (dates.any { !it.isBefore(weekStart) && !it.isAfter(weekStart.plusDays(6)) }) {
@@ -296,8 +312,11 @@ fun calculateStreak(habit: Habit, checkIns: List<CheckInRecord>): Int {
             }
         }
         else -> {
+            // DAILY / WEEKDAYS：按天连续
             var currentDate = LocalDate.now()
-            if (!dates.contains(currentDate)) currentDate = currentDate.minusDays(1)
+            if (!dates.contains(currentDate)) {
+                currentDate = currentDate.minusDays(1)
+            }
             while (dates.contains(currentDate)) {
                 streak++
                 currentDate = currentDate.minusDays(1)
