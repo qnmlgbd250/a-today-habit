@@ -89,13 +89,13 @@ class HabitViewModel(
         return repository.getCheckInsByDate(date).asLiveData()
     }
 
-    fun insertHabit(name: String, description: String, frequency: String, frequencyValue: String, icon: String = "Sunny", targetCount: Int = 1) {
+    fun insertHabit(name: String, description: String, frequency: String, frequencyValue: String, icon: String = "Sunny", targetCount: Int = 1, color: Int = 0) {
         viewModelScope.launch {
             val habit = Habit(
                 name = name,
                 description = description,
                 icon = icon,
-                color = 0,
+                color = color,
                 frequency = frequency,
                 frequencyValue = frequencyValue,
                 targetCount = targetCount

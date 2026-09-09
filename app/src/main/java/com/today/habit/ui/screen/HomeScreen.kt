@@ -1,141 +1,132 @@
-﻿package com.today.habit.ui.screen
+package com.today.habit.ui.screen
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import com.today.habit.data.AppDatabase
-import com.today.habit.data.HabitRepository
-import com.today.habit.data.entity.CheckInRecord
-import com.today.habit.data.entity.Habit
-import com.today.habit.ui.component.HabitIcons
-import com.today.habit.ui.component.CheckInSoundPlayer
-import com.today.habit.ui.component.SFIcons
-import com.today.habit.ui.component.IOSMenuCard
-import com.today.habit.ui.component.IOSMenuItem
-import com.today.habit.ui.component.IOSMenuDivider
-import com.today.habit.ui.component.IOSToast
-import com.today.habit.ui.viewmodel.HabitViewModel
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavController
+import com.today.habit.data.entity.CheckInRecord
+import com.today.habit.data.entity.Habit
+import com.today.habit.ui.component.AuroraBackground
+import com.today.habit.ui.component.CheckRingButton
+import com.today.habit.ui.component.GlassCard
+import com.today.habit.ui.component.GlassIconButton
+import com.today.habit.ui.component.HabitTile
+import com.today.habit.ui.component.HabitIcons
+import com.today.habit.ui.component.CheckInSoundPlayer
+import com.today.habit.ui.component.IOSMenuCard
+import com.today.habit.ui.component.IOSMenuDivider
+import com.today.habit.ui.component.IOSMenuItem
+import com.today.habit.ui.component.IOSToast
+import com.today.habit.ui.component.LargeTitleHeader
+import com.today.habit.ui.component.SFIcons
+import com.today.habit.ui.component.accent
+import com.today.habit.ui.component.cheerOf
+import com.today.habit.ui.component.frequencyLabel
+import com.today.habit.ui.component.greetingOf
+import com.today.habit.ui.component.titleStr
+import com.today.habit.ui.theme.ThemeGreen
+import com.today.habit.ui.viewmodel.HabitViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import java.time.LocalDate
 import java.time.format.TextStyle
-import java.util.*
-import com.today.habit.ui.theme.ThemeGreen
-import com.today.habit.ui.theme.ThemeGreenDark
-import com.today.habit.ui.theme.ThemeGreenLight
+import java.util.Locale
 
-import com.today.habit.data.SettingsManager
-
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * 首页 2.0（旗舰重构）：
+ * 极光背景 + 大标题 + 今日 hero + 本周条 + 液态玻璃习惯卡。
+ * 交互：点圆环打卡一次，点卡片进入编辑，长按无（保持极简）。
+ */
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     var toastMessage by remember { mutableStateOf<String?>(null) }
+    var showMenu by remember { mutableStateOf(false) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshDateIfNecessary()
-            }
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshDateIfNecessary()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let {
             scope.launch {
                 try {
                     val json = viewModel.exportDataJson()
-                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
-                        OutputStreamWriter(outputStream).use { writer ->
-                            writer.write(json)
-                        }
+                    context.contentResolver.openOutputStream(it)?.use { out ->
+                        OutputStreamWriter(out).use { w -> w.write(json) }
                     }
                     toastMessage = "备份成功"
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    toastMessage = "备份失败: ${e.message}"
-                }
+                } catch (e: Exception) { toastMessage = "备份失败: ${e.message}" }
             }
         }
     }
-
-    val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
             scope.launch {
                 try {
-                    context.contentResolver.openInputStream(it)?.use { inputStream ->
-                        InputStreamReader(inputStream).use { reader ->
-                            val json = reader.readText()
-                            viewModel.importDataJson(json) { success, message ->
-                                if (success) {
-                                    toastMessage = "恢复成功"
-                                    val current = viewModel.selectedDate.value
-                                    viewModel.setSelectedDate(current)
-                                } else {
-                                    toastMessage = "恢复失败: $message"
-                                }
+                    context.contentResolver.openInputStream(it)?.use { ins ->
+                        InputStreamReader(ins).use { r ->
+                            viewModel.importDataJson(r.readText()) { success, message ->
+                                toastMessage = if (success) "恢复成功" else "恢复失败: $message"
+                                if (success) viewModel.setSelectedDate(viewModel.selectedDate.value)
                             }
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    toastMessage = "文件读取失败: ${e.message}"
-                }
+                } catch (e: Exception) { toastMessage = "文件读取失败: ${e.message}" }
             }
         }
     }
@@ -143,201 +134,200 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     val allHabits by viewModel.allHabits.observeAsState(emptyList())
     val selectedDate by viewModel.selectedDate
     val checkIns by viewModel.getCheckInsByDate(selectedDate.toString()).observeAsState(emptyList())
-    val filteredHabits = viewModel.getFilteredHabits(allHabits, selectedDate)
-    
-    var showDateBar by rememberSaveable { mutableStateOf(false) }
-    var showMenu by remember { mutableStateOf(false) }
-
-    // HUD 自动消失
-    LaunchedEffect(toastMessage) {
-        if (toastMessage != null) {
-            delay(1800)
-            toastMessage = null
+    val filteredHabits = remember(allHabits, selectedDate) { viewModel.getFilteredHabits(allHabits, selectedDate) }
+    val doneCount = remember(filteredHabits, checkIns) {
+        filteredHabits.count { h ->
+            val c = checkIns.find { it.habitId == h.id }?.count ?: 0
+            c >= h.targetCount
         }
     }
+    val totalCount = filteredHabits.size
+    val progress = if (totalCount == 0) 0f else doneCount.toFloat() / totalCount.toFloat()
+    val isDark by viewModel.isDarkTheme
 
-    Box(modifier = Modifier.fillMaxSize()) {
-    Scaffold(
-        topBar = {
-            Column {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { showDateBar = !showDateBar }
-                        ) {
-                            Text(
-                                text = if (selectedDate == LocalDate.now()) "今日习惯" else selectedDate.toString(),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Icon(
-                                painterResource(SFIcons.res(if (showDateBar) "chevron.up" else "chevron.down")),
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(painterResource(SFIcons.res("plus")), contentDescription = "操作")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground
-                    )
-                )
-                AnimatedVisibility(
-                    visible = showDateBar,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
+    LaunchedEffect(toastMessage) {
+        if (toastMessage != null) { delay(1800); toastMessage = null }
+    }
+
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        AuroraBackground(dark = isDark)
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 0.dp, bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            item {
+                Spacer(Modifier.statusBarsPadding().height(12.dp))
+                LargeTitleHeader(
+                    title = greetingOf(java.time.LocalTime.now().hour),
+                    subtitle = selectedDate.titleStr()
                 ) {
-                    DateSelectionBar(selectedDate) { viewModel.setSelectedDate(it) }
+                    GlassIconButton("plus") { navController.navigate("habit_edit/new") }
+                    GlassIconButton(if (isDark) "sun.max" else "moon") { viewModel.toggleTheme() }
+                    GlassIconButton("gearshape") { showMenu = !showMenu }
                 }
             }
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { showDateBar = false }
-        ) {
-            if (filteredHabits.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("该日期没有需要完成的习惯", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            // 今日 Hero：进度环 + 问候 + 本周迷你条入口
+            item {
+                GlassCard {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        com.today.habit.ui.component.HeroRing(progress = progress)
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                if (selectedDate == LocalDate.now()) "今日进度" else "${selectedDate.monthValue}月${selectedDate.dayOfMonth}日",
+                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                "$doneCount / $totalCount 已完成",
+                                fontSize = 22.sp, fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                cheerOf(doneCount, totalCount),
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    WeekStrip(selectedDate) { viewModel.setSelectedDate(it) }
                 }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 112.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(filteredHabits) { habit ->
-                        val checkIn = checkIns.find { it.habitId == habit.id }
-                        HabitGridItem(habit, checkIn) {
-                            viewModel.toggleCheckIn(habit.id, selectedDate.toString(), habit.targetCount)
+            }
+
+            // 习惯卡片
+            if (filteredHabits.isEmpty()) {
+                item {
+                    GlassCard {
+                        Column(
+                            Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(64.dp).clip(CircleShape)
+                                    .background(ThemeGreen.copy(alpha = 0.12f))
+                            ) {
+                                Icon(
+                                    painter = painterResource(SFIcons.res("sparkles")),
+                                    contentDescription = null, tint = ThemeGreen,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Text("还没有安排习惯", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "点击右上角 ＋ 创建第一个好习惯",
+                                fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(14.dp))
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Brush.linearGradient(listOf(Color(0xFF5BE584), ThemeGreen)))
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { navController.navigate("habit_edit/new") }
+                                    .padding(horizontal = 28.dp, vertical = 12.dp)
+                            ) {
+                                Text("新建习惯", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            }
                         }
                     }
                 }
+            } else {
+                items(filteredHabits, key = { it.id }) { habit ->
+                    val checkIn = checkIns.find { it.habitId == habit.id }
+                    FlagshipHabitCard(
+                        habit = habit,
+                        checkIn = checkIn,
+                        onToggle = { viewModel.toggleCheckIn(habit.id, selectedDate.toString(), habit.targetCount) },
+                        onEdit = { navController.navigate("habit_edit/${habit.id}") }
+                    )
+                }
             }
         }
-    }
 
-    // iOS 拉下式玻璃菜单（替代 Material DropdownMenu）
-    if (showMenu) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.08f))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { showMenu = false }
-        )
-        val isDark by viewModel.isDarkTheme
-        IOSMenuCard(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(top = 48.dp, end = 16.dp)
-        ) {
-            IOSMenuItem(if (isDark) "sun.max" else "moon", if (isDark) "浅色模式" else "深色模式") {
-                showMenu = false
-                viewModel.toggleTheme()
-            }
-            IOSMenuDivider()
-            IOSMenuItem("plus", "新建习惯") {
-                showMenu = false
-                navController.navigate("habit_edit/new")
-            }
-            IOSMenuDivider()
-            IOSMenuItem("gearshape", "管理习惯") {
-                showMenu = false
-                navController.navigate("manage_habits")
-            }
-            IOSMenuDivider()
-            IOSMenuItem("square.and.arrow.up", "备份数据") {
-                showMenu = false
-                exportLauncher.launch("habit_backup_${LocalDate.now()}.json")
-            }
-            IOSMenuDivider()
-            IOSMenuItem("clock.arrow.circlepath", "恢复数据") {
-                showMenu = false
-                importLauncher.launch(arrayOf("application/json"))
+        // 右上玻璃菜单
+        if (showMenu) {
+            Box(
+                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.08f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showMenu = false }
+            )
+            IOSMenuCard(
+                modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 108.dp, end = 20.dp)
+            ) {
+                IOSMenuItem("pencil", "管理习惯") { showMenu = false; navController.navigate("manage_habits") }
+                IOSMenuDivider()
+                IOSMenuItem("square.and.arrow.up", "备份数据") {
+                    showMenu = false
+                    exportLauncher.launch("habit_backup_${LocalDate.now()}.json")
+                }
+                IOSMenuDivider()
+                IOSMenuItem("clock.arrow.circlepath", "恢复数据") {
+                    showMenu = false
+                    importLauncher.launch(arrayOf("application/json"))
+                }
             }
         }
-    }
 
-    // iOS 风格 HUD 提示
-    IOSToast(toastMessage)
+        IOSToast(toastMessage)
     }
 }
 
+/** 本周横条：周一～周日，选中态为品牌绿胶囊 */
 @Composable
-fun DateSelectionBar(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Unit) {
+fun WeekStrip(selected: LocalDate, onSelect: (LocalDate) -> Unit) {
+    val weekStart = remember(selected) {
+        selected.minusDays((selected.dayOfWeek.value - 1).toLong())
+    }
+    val days = remember(weekStart) { (0..6).map { weekStart.plusDays(it.toLong()) } }
     val today = LocalDate.now()
-    val dates = remember(today) {
-        (-30..30).map { today.plusDays(it.toLong()) }
-    }
-    val listState = rememberLazyListState()
-    
-    LaunchedEffect(selectedDate) {
-        val index = dates.indexOf(selectedDate)
-        if (index >= 0) {
-            listState.scrollToItem(maxOf(0, index - 3))
-        }
-    }
-
-    LazyRow(
-        state = listState,
-        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(dates) { date ->
-            val isSelected = date == selectedDate
-            val isToday = date == LocalDate.now()
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        days.forEach { date ->
+            val isSel = date == selected
+            val isToday = date == today
             Column(
-                modifier = Modifier
-                    .width(45.dp)
-                    .height(60.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(if (isSelected) ThemeGreen else Color.Transparent)
-                    .clickable { onDateSelected(date) }
-                    .padding(vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (isSel) ThemeGreen else Color.Transparent)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onSelect(date) }
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CHINESE),
-                    fontSize = 11.sp,
-                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CHINESE),
+                    fontSize = 11.sp, fontWeight = FontWeight.Medium,
+                    color = if (isSel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "${date.monthValue}/${date.dayOfMonth}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                    "${date.dayOfMonth}",
+                    fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
+                    color = if (isSel) Color.White else MaterialTheme.colorScheme.onBackground
                 )
                 Box(
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .size(4.dp)
-                        .clip(CircleShape)
+                    Modifier.padding(top = 3.dp).size(4.dp).clip(CircleShape)
                         .background(
-                            if (isToday) (if (isSelected) Color.White else ThemeGreen) 
-                            else Color.Transparent
+                            when {
+                                isSel -> Color.White
+                                isToday -> ThemeGreen
+                                else -> Color.Transparent
+                            }
                         )
                 )
             }
@@ -345,94 +335,71 @@ fun DateSelectionBar(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Uni
     }
 }
 
+/** 旗舰习惯卡：图标瓷砖 + 名称/副标题 + 圆环打卡键 */
 @Composable
-fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Unit) {
+fun FlagshipHabitCard(habit: Habit, checkIn: CheckInRecord?, onToggle: () -> Unit, onEdit: () -> Unit) {
     val context = LocalContext.current
-    val currentCount = checkInRecord?.count ?: 0
-    val targetCount = habit.targetCount
-    val isCompleted = currentCount >= targetCount
-    
-    val progress = animateFloatAsState(
-        targetValue = currentCount.toFloat() / targetCount.toFloat(),
-        animationSpec = tween(durationMillis = 500, easing = LinearOutSlowInEasing),
-        label = "ProgressAnimation"
-    )
+    val accent = remember(habit.id, habit.color) { habit.accent() }
+    val count = checkIn?.count ?: 0
+    val done = count >= habit.targetCount
+    val surface = MaterialTheme.colorScheme.surface
+    val isDark = MaterialTheme.colorScheme.background.red < 0.5f
 
-    Column(
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(12.dp, RoundedCornerShape(24.dp), spotColor = Color.Black.copy(alpha = 0.1f))
+            .clip(RoundedCornerShape(24.dp))
+            .background(surface.copy(alpha = if (isDark) 0.74f else 0.82f))
+            .border(1.dp, Color.White.copy(alpha = if (isDark) 0.16f else 0.7f), RoundedCornerShape(24.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
-            ) {
-                CheckInSoundPlayer.playCompletionSound(context)
-                onClick()
-            }
-            .padding(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            ) { onEdit() }
+            .padding(14.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(70.dp)
-                .clip(CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(modifier = Modifier.size(64.dp)) {
-                drawArc(
-                    color = Color.LightGray.copy(alpha = 0.2f),
-                    startAngle = 0f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-                )
-                
-                if (progress.value > 0f) {
-                    drawArc(
-                        color = ThemeGreen,
-                        startAngle = -90f,
-                        sweepAngle = 360f * progress.value,
-                        useCenter = false,
-                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+        HabitTile(iconRes = HabitIcons.getRes(habit.icon), accent = accent)
+        Spacer(Modifier.width(13.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                habit.name, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                color = if (done) MaterialTheme.colorScheme.onSurfaceVariant
+                else MaterialTheme.colorScheme.onBackground,
+                maxLines = 1
+            )
+            Spacer(Modifier.height(3.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.clip(RoundedCornerShape(7.dp))
+                        .background(accent.soft)
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        "${habit.frequencyLabel()} · 目标 $count/${habit.targetCount}",
+                        fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = accent.main
                     )
                 }
             }
-            
-            AnimatedContent(
-                targetState = isCompleted,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
-                },
-                label = "IconChange"
-            ) { completed ->
-                if (completed) {
-                    Icon(
-                        painter = painterResource(HabitIcons.getRes(habit.icon)),
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = ThemeGreenDark
-                    )
-                } else {
-                    Icon(
-                        painter = painterResource(HabitIcons.getRes(habit.icon)),
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            // 细进度条
+            if (habit.targetCount > 1) {
+                Spacer(Modifier.height(7.dp))
+                val frac = (count.toFloat() / habit.targetCount.toFloat()).coerceIn(0f, 1f)
+                Box(
+                    Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp))
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                ) {
+                    Box(
+                        Modifier.fillMaxWidth(frac).height(4.dp).clip(RoundedCornerShape(2.dp))
+                            .background(Brush.horizontalGradient(listOf(accent.main, accent.gradientEnd)))
                     )
                 }
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = habit.name,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = "$currentCount/$targetCount",
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isCompleted) ThemeGreenDark else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-        )
+        Spacer(Modifier.width(10.dp))
+        CheckRingButton(count = count, target = habit.targetCount, accent = accent) {
+            CheckInSoundPlayer.playCompletionSound(context)
+            onToggle()
+        }
     }
 }

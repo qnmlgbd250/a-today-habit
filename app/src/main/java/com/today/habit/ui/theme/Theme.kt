@@ -13,24 +13,33 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFE0E0E0),
-    secondary = Color(0xFFB0B0B0),
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E)
+    primary = Color(0xFF30D158),
+    onPrimary = Color.White,
+    secondary = Color(0xFF98989F),
+    background = IOSDarkBackground,
+    onBackground = Color(0xFFF2F2F7),
+    surface = IOSDarkSurface,
+    onSurface = Color(0xFFF2F2F7),
+    surfaceVariant = IOSDarkSurface2,
+    onSurfaceVariant = Color(0xFF98989F),
+    error = Color(0xFFFF6961)
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryColor,
+    onPrimary = Color.White,
     secondary = SecondaryColor,
     background = SoftWhiteBackground,
+    onBackground = Color(0xFF1C1C1E),
     surface = SoftWhiteSurface,
-    onBackground = Color(0xFF1C1B17),
-    onSurface = Color(0xFF1C1B17)
+    onSurface = Color(0xFF1C1C1E),
+    surfaceVariant = Color(0xFFE5E5EA),
+    onSurfaceVariant = Color(0xFF6C6C70),
+    error = Color(0xFFFF3B30)
 )
 
 @Composable
@@ -67,4 +76,3 @@ private object NoIndication : IndicationNodeFactory {
 }
 
 private class EmptyNode : Modifier.Node()
-

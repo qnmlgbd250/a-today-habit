@@ -134,7 +134,41 @@ app/src/main/java/com/today/habit/
      -d '{"content": "【小日常 vX.Y.Z 发版】..."}'
    ```
    - 上传成功返回 HTTP 201；若返回 403 说明房间后来设置了密码，需向用户索取 `X-Room-Password` 请求头的值。
-   - 发版说明文本中写明版本号、versionCode、更新内容，并注明"覆盖安装无需卸载旧版"。
+   - 发版说明文本中写明版本号、versionCode、更新内容，并注明"覆盖安装无需卸载旧版"（证书不一致时如实改写，见下）。
+   - ⚠️ 云剪贴板**不支持中文文件名**（返回 400 `"请选择文件"`）：APK 先复制为英文名（如 `xiaorichang-<版本>.apk`）再上传，发版说明里注明对应中文名。
+   - ⚠️ 发版说明含中文时**不要用 `-d` 内联 JSON**（返回 400 `"内容不能为空"`）：先把 JSON 写文件，再用 `--data-binary @文件` 发送（文件放仓库内用相对路径，`curl` 读系统 `/tmp` 会失败）。
+
+## 自动发版规则（每次更新代码都自动发）
+
+- AI 每次完成用户确认的代码更新后，**自动走完上面的发版流程并发布到云剪贴板**，无需用户再下指令（除非遇到 403 需要房间密码，或证书不一致需用户决策，见下）。
+- 发版提交与版本 bump 合并为一个提交，message 沿用 `vX.Y.Z: 中文变更描述` 格式。
+
+### 本机（linsh）环境差异
+
+上面发版流程里的 `C:\Users\ttt\...` 路径是 ttt 机器的，在 linsh 本机按下表替换：
+
+| 项目 | linsh 本机值 |
+|------|--------------|
+| SDK | `C:/Android/Sdk`（`local.properties` 写 `sdk.dir=C:/Android/Sdk`，已 gitignore） |
+| build-tools | `C:/Android/Sdk/build-tools/36.0.0` |
+| debug keystore | `C:/Users/linsh/.android/debug.keystore`（密码 `android`，别名 `androiddebugkey`） |
+| `~/.gradle/gradle.properties` | 配了 `127.0.0.1:7890` 代理；该代理未启动时构建前临时删掉代理行，构建完立即恢复 |
+| `apksigner.bat` | 经 Git Bash 调用输出会被吞，改用 `java -jar <build-tools>/lib/apksigner.jar` |
+| `android-37.0` 平台 | 公有仓库元数据最高只到 android-36，需用 canary 通道安装：`sdkmanager --channel=3 "platforms;android-37.0"`（直接调 java 主类，见下；装一次即可） |
+
+```bash
+# canary 通道安装平台（Git Bash，直接调 java，绕开 .bat）
+JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"
+cd /c/Android/Sdk/cmdline-tools/latest
+"$JAVA_HOME/bin/java" -Dcom.android.sdklib.toolsdir="$PWD" -cp "lib/*" \
+  com.android.sdklib.tool.sdkmanager.SdkManagerCli --channel=3 "platforms;android-37.0"
+```
+
+### 签名证书警告（重要）
+
+- linsh 本机 debug keystore 的 SHA-256 是 `9d2a8fa2...`，与历史版本 `775daca9...` **不一致**，签出的包老用户无法覆盖安装（需卸载重装，数据清空）。
+- 发版说明里必须如实注明证书变化，不得写"覆盖安装无需卸载旧版"。
+- 要恢复覆盖安装，需用户提供原 `775daca9` 证书的 keystore 文件，放到本机后再按原流程签名；拿到之前每次发版都要重复本警告。
 
 ## UI 风格规范（iOS 化，去 Android 化）
 
