@@ -2,8 +2,6 @@ package com.today.habit.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,12 +18,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,8 +37,8 @@ import com.kyant.backdrop.effects.vibrancy
 import com.today.habit.ui.theme.ThemeGreen
 
 /**
- * iOS 27 悬浮液态玻璃底栏：真正的 backdrop 折射 + 中央新建按钮。
- * 布局：今日 | ＋ | 统计，中央按钮为品牌绿渐变，旗舰 App 标配。
+ * 悬浮液态玻璃底栏（高级版）：真 backdrop 折射 + 纯平中央键。
+ * 选中态用品牌绿 tint，未选中次级灰；中央键纯平、无渐变。
  */
 @Composable
 fun GlassBottomNavigationBar(
@@ -53,6 +49,7 @@ fun GlassBottomNavigationBar(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val surfaceColor = MaterialTheme.colorScheme.surface
+    val dark = isDark()
 
     fun go(route: String) {
         if (currentRoute == route) return
@@ -64,22 +61,22 @@ fun GlassBottomNavigationBar(
 
     Row(
         modifier = modifier
-            .padding(horizontal = 24.dp)
-            .height(72.dp)
+            .padding(horizontal = 28.dp)
+            .height(66.dp)
             .drawBackdrop(
                 backdrop = backdrop,
-                shape = { RoundedCornerShape(36.dp) },
+                shape = { RoundedCornerShape(33.dp) },
                 effects = {
                     vibrancy()
                     blur(6f.dp.toPx())
                     lens(20f.dp.toPx(), 40f.dp.toPx())
                 },
                 onDrawSurface = {
-                    drawRect(surfaceColor.copy(alpha = 0.55f))
+                    drawRect(surfaceColor.copy(alpha = if (dark) 0.62f else 0.66f))
                 }
             )
             .fillMaxWidth()
-            .padding(horizontal = 10.dp),
+            .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -90,24 +87,21 @@ fun GlassBottomNavigationBar(
             onClick = { go("home") },
             modifier = Modifier.weight(1f)
         )
-        // 中央新建按钮
+        // 中央新建键：纯平品牌绿
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(56.dp)
-                .shadow(10.dp, CircleShape, spotColor = ThemeGreen.copy(alpha = 0.5f))
+            modifier = Modifier.size(50.dp)
+                .shadow(8.dp, CircleShape, spotColor = Color.Black.copy(alpha = 0.25f))
                 .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(Color(0xFF5BE584), ThemeGreen)))
-                .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { navController.navigate("habit_edit/new") }
+                .background(ThemeGreen)
+                .border(0.5.dp, Color.White.copy(alpha = 0.35f), CircleShape)
+                .pressable(scaleTo = 0.9f) { navController.navigate("habit_edit/new") }
         ) {
             Icon(
                 painter = painterResource(SFIcons.res("plus")),
                 contentDescription = "新建习惯",
                 tint = Color.White,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
             )
         }
         BottomTab(
@@ -133,25 +127,21 @@ private fun BottomTab(
         verticalArrangement = Arrangement.Center,
         modifier = modifier
             .fillMaxHeight()
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            )
+            .clip(RoundedCornerShape(18.dp))
+            .pressable(onClick = onClick)
             .padding(vertical = 8.dp)
     ) {
         Icon(
             painter = painterResource(SFIcons.res(iconKey)),
             contentDescription = title,
-            tint = if (selected) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-            modifier = Modifier.size(23.dp)
+            tint = if (selected) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.size(22.dp)
         )
         Text(
             title,
             fontSize = 10.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = if (selected) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            color = if (selected) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
     }
 }

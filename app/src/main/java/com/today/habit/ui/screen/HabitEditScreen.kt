@@ -2,8 +2,6 @@ package com.today.habit.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -40,29 +39,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.today.habit.ui.component.GlassCard
 import com.today.habit.ui.component.HabitAccents
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.HabitTile
-import com.today.habit.ui.component.IOSFormTextField
+import com.today.habit.ui.component.HairlineDivider
 import com.today.habit.ui.component.IOSSegmentedControl
-import com.today.habit.ui.component.IOSSlider
+import com.today.habit.ui.component.InsetGroup
 import com.today.habit.ui.component.SFIcons
-import com.today.habit.ui.component.SectionHeader
+import com.today.habit.ui.component.SectionFooter
+import com.today.habit.ui.component.SectionLabel
+import com.today.habit.ui.component.isDark
+import com.today.habit.ui.component.pressable
+import com.today.habit.ui.theme.Body17
+import com.today.habit.ui.theme.Footnote13
+import com.today.habit.ui.theme.TabularNum
 import com.today.habit.ui.theme.ThemeGreen
 import com.today.habit.ui.viewmodel.HabitViewModel
 
 /**
- * 新建/编辑习惯 2.0：iOS 分组表单 + 外观（图标/配色）+ 目标步进器 + 频率芯片。
- * 路由：habit_edit/new 新建，habit_edit/{id} 编辑。
+ * 新建/编辑习惯 3.0：iOS 设置式分组表单。
+ * 纯平配色、无衬线输入、分组脚注说明，保存收敛到导航栏。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +81,7 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
     var frequencyValue by rememberSaveable { mutableStateOf("") }
     var targetCount by rememberSaveable { mutableStateOf(1) }
     var icon by rememberSaveable { mutableStateOf(HabitIcons.DefaultIcon) }
-    var colorIdx by rememberSaveable { mutableStateOf(5) }
+    var colorIdx by rememberSaveable { mutableStateOf(6) }
 
     LaunchedEffect(existing) {
         if (!initialized && existing != null) {
@@ -87,7 +90,7 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
             frequencyValue = existing.frequencyValue
             targetCount = existing.targetCount
             icon = existing.icon
-            colorIdx = if (existing.color in HabitAccents.indices) existing.color else 5
+            colorIdx = if (existing.color in HabitAccents.indices) existing.color else 6
             initialized = true
         }
     }
@@ -117,6 +120,7 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
     }
 
     val accent = HabitAccents[colorIdx]
+    val dark = isDark()
 
     Scaffold(
         topBar = {
@@ -124,15 +128,15 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
                 title = { Text(if (isNew) "新建习惯" else "编辑习惯", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(painter = painterResource(SFIcons.res("chevron.left")), contentDescription = "返回", modifier = Modifier.size(22.dp))
+                        Icon(painter = painterResource(SFIcons.res("chevron.left")), contentDescription = "返回", modifier = Modifier.size(20.dp))
                     }
                 },
                 actions = {
                     TextButton(onClick = { save() }, enabled = name.isNotBlank()) {
                         Text(
                             "保存",
-                            color = if (name.isNotBlank()) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            fontWeight = FontWeight.Bold, fontSize = 16.sp
+                            color = if (name.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) else ThemeGreen,
+                            fontWeight = FontWeight.SemiBold, fontSize = 16.sp
                         )
                     }
                 },
@@ -147,202 +151,166 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
         Column(
             modifier = Modifier.fillMaxSize().padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             // 实时预览
-            GlassCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    HabitTile(iconRes = HabitIcons.getRes(icon), accent = accent, size = 56.dp, iconSize = 27.dp)
-                    Spacer(Modifier.width(14.dp))
+            InsetGroup {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)
+                ) {
+                    HabitTile(iconRes = HabitIcons.getRes(icon), accent = accent, size = 48.dp, iconSize = 23.dp)
+                    Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
                             if (name.isBlank()) "习惯名称" else name,
-                            fontSize = 18.sp, fontWeight = FontWeight.ExtraBold,
-                            color = if (name.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            style = Body17, fontWeight = FontWeight.SemiBold,
+                            color = if (name.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
                             else MaterialTheme.colorScheme.onBackground,
                             maxLines = 1
                         )
-                        Spacer(Modifier.height(3.dp))
+                        Spacer(Modifier.height(1.dp))
                         Text(
                             "${freqLabel(frequency)} · 目标 $targetCount 次",
-                            fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = Footnote13, color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionHeader("基本信息")
-                GlassCard {
-                    IOSFormTextField(value = name, onValueChange = { if (it.length <= 20) name = it }, placeholder = "例如：早起跑步")
-                    Spacer(Modifier.height(4.dp))
-                    Text("${name.length}/20", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.End))
-                }
-            }
+            SectionLabel("名称")
+            InsetGroup { PlainField(value = name, onChange = { if (it.length <= 20) name = it }, placeholder = "例如：早起跑步") }
+            SectionFooter("最多 20 个字，首页只显示一行。")
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionHeader("外观")
-                GlassCard {
-                    // 图标行
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {
-                                navController.currentBackStackEntry?.savedStateHandle?.set("current_icon", icon)
-                                navController.navigate("icon_picker/$icon")
-                            }
-                            .padding(vertical = 4.dp)
-                    ) {
-                        HabitTile(iconRes = HabitIcons.getRes(icon), accent = accent, size = 44.dp, iconSize = 21.dp)
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("图标", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                SFIcons.label(HabitIcons.resKey(icon)),
-                                fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+            SectionLabel("外观")
+            InsetGroup {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                        .pressable {
+                            navController.currentBackStackEntry?.savedStateHandle?.set("current_icon", icon)
+                            navController.navigate("icon_picker/$icon")
                         }
-                        Icon(
-                            painter = painterResource(SFIcons.res("chevron.right")), contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            modifier = Modifier.size(15.dp)
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    HabitTile(iconRes = HabitIcons.getRes(icon), accent = accent, size = 40.dp, iconSize = 19.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("图标", style = Body17, color = MaterialTheme.colorScheme.onBackground)
+                        Text(
+                            SFIcons.label(HabitIcons.resKey(icon)),
+                            style = Footnote13, color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Spacer(Modifier.height(14.dp))
-                    Text("配色", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(10.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        HabitAccents.forEachIndexed { idx, a ->
-                            val sel = idx == colorIdx
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.size(38.dp)
-                                    .shadow(if (sel) 6.dp else 0.dp, CircleShape)
-                                    .clip(CircleShape)
-                                    .background(Brush.linearGradient(listOf(a.main, a.gradientEnd)))
-                                    .border(
-                                        if (sel) 2.dp else 0.dp,
-                                        if (sel) MaterialTheme.colorScheme.onBackground else Color.Transparent,
-                                        CircleShape
-                                    )
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) { colorIdx = idx }
-                            ) {
-                                if (sel) {
-                                    Icon(
-                                        painter = painterResource(SFIcons.res("checkmark")),
-                                        contentDescription = null, tint = Color.White,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionHeader("目标次数")
-                GlassCard {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("每次完成计为", fontSize = 15.sp, fontWeight = FontWeight.Medium)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            StepperBtn("-", enabled = targetCount > 1) { if (targetCount > 1) targetCount-- }
-                            Spacer(Modifier.width(12.dp))
-                            Text("$targetCount 次", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = accent.main)
-                            Spacer(Modifier.width(12.dp))
-                            StepperBtn("+", enabled = targetCount < 10) { if (targetCount < 10) targetCount++ }
-                        }
-                    }
-                    IOSSlider(
-                        value = targetCount.toFloat(),
-                        onValueChange = { targetCount = it.toInt() },
-                        valueRange = 1f..10f, steps = 8,
-                        modifier = Modifier.fillMaxWidth()
+                    Icon(
+                        painter = painterResource(SFIcons.res("chevron.right")), contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                        modifier = Modifier.size(13.dp)
                     )
                 }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionHeader("重复周期")
-                GlassCard {
-                    IOSSegmentedControl(
-                        options = listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月"),
-                        selected = frequency,
-                        onSelect = {
-                            frequency = it
-                            if (it == "DAILY" || it == "WEEKDAYS") frequencyValue = ""
-                            if (it == "WEEKLY" && frequencyValue.isBlank()) frequencyValue = "1 3 5"
-                            if (it == "MONTHLY" && frequencyValue.isBlank()) frequencyValue = "1 15"
-                        }
-                    )
-                    if (frequency == "WEEKLY") {
-                        Spacer(Modifier.height(12.dp))
-                        WeekdayChips(frequencyValue) { frequencyValue = it }
-                    }
-                    if (frequency == "MONTHLY") {
-                        Spacer(Modifier.height(12.dp))
-                        IOSFormTextField(
-                            value = frequencyValue, onValueChange = { frequencyValue = it },
-                            placeholder = "例如：1 15（每月几号）"
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("1", "1 15", "10 20").forEach { preset ->
-                                val sel = frequencyValue == preset
-                                Box(
-                                    Modifier.clip(RoundedCornerShape(12.dp))
-                                        .background(if (sel) accent.soft else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null
-                                        ) { frequencyValue = preset }
-                                        .padding(horizontal = 12.dp, vertical = 7.dp)
-                                ) {
-                                    Text(preset, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (sel) accent.main else MaterialTheme.colorScheme.onSurface)
-                                }
+                HairlineDivider(startIndent = 66.dp)
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HabitAccents.forEachIndexed { idx, a ->
+                        val sel = idx == colorIdx
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(30.dp).clip(CircleShape)
+                                .background(a.main)
+                                .pressable(scaleTo = 0.88f) { colorIdx = idx }
+                        ) {
+                            if (sel) {
+                                Icon(
+                                    painter = painterResource(SFIcons.res("checkmark")),
+                                    contentDescription = null, tint = Color.White,
+                                    modifier = Modifier.size(14.dp)
+                                )
                             }
                         }
                     }
                 }
             }
+            SectionFooter("图标与配色只影响外观，不影响数据。")
 
-            // 底部大保存键
-            val saveModifier = if (name.isBlank()) {
-                Modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
-            } else {
-                Modifier.background(Brush.linearGradient(listOf(Color(0xFF5BE584), ThemeGreen)))
+            SectionLabel("目标")
+            InsetGroup {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("每次完成计为", style = Body17, color = MaterialTheme.colorScheme.onBackground)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        StepperBtn("−", enabled = targetCount > 1, dark = dark) { if (targetCount > 1) targetCount-- }
+                        Text(
+                            "$targetCount 次", style = TabularNum, fontSize = 17.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                        StepperBtn("＋", enabled = targetCount < 10, dark = dark) { if (targetCount < 10) targetCount++ }
+                    }
+                }
             }
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxWidth()
-                    .shadow(10.dp, RoundedCornerShape(18.dp), spotColor = ThemeGreen.copy(alpha = 0.4f))
-                    .clip(RoundedCornerShape(18.dp))
-                    .then(saveModifier)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { save() }
-                    .padding(vertical = 15.dp)
-            ) {
-                Text(
-                    if (isNew) "开始坚持" else "保存修改",
-                    color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp
+            SectionFooter("一天内需要打卡的次数，适合阅读页数、喝水杯数等。")
+
+            SectionLabel("重复")
+            InsetGroup {
+                IOSSegmentedControl(
+                    options = listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月"),
+                    selected = frequency,
+                    onSelect = {
+                        frequency = it
+                        if (it == "DAILY" || it == "WEEKDAYS") frequencyValue = ""
+                        if (it == "WEEKLY" && frequencyValue.isBlank()) frequencyValue = "1 3 5"
+                        if (it == "MONTHLY" && frequencyValue.isBlank()) frequencyValue = "1 15"
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
                 )
             }
-            Spacer(Modifier.height(24.dp))
+            if (frequency == "WEEKLY") {
+                Spacer(Modifier.height(10.dp))
+                InsetGroup {
+                    WeekdayPicker(value = frequencyValue, onChange = { frequencyValue = it })
+                }
+                if (frequencyValue.split(" ").filter { it.isNotBlank() }.isEmpty()) {
+                    SectionFooter("请至少选择一天。")
+                }
+            }
+            if (frequency == "MONTHLY") {
+                Spacer(Modifier.height(10.dp))
+                InsetGroup {
+                    MonthPresetPicker(value = frequencyValue, onChange = { frequencyValue = it })
+                }
+                SectionFooter("输入每月几号，用空格分隔，如 1 15。")
+            }
+            Spacer(Modifier.height(28.dp))
         }
     }
+}
+
+/** 无衬线输入框：iOS 设置式纯白底 */
+@Composable
+private fun PlainField(value: String, onChange: (String) -> Unit, placeholder: String) {
+    BasicTextField(
+        value = value,
+        onValueChange = onChange,
+        singleLine = true,
+        textStyle = Body17.copy(color = MaterialTheme.colorScheme.onBackground),
+        cursorBrush = SolidColor(ThemeGreen),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        decorationBox = { inner ->
+            Box {
+                if (value.isEmpty()) {
+                    Text(placeholder, style = Body17, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                }
+                inner()
+            }
+        }
+    )
 }
 
 private fun freqLabel(f: String) = when (f) {
@@ -354,54 +322,80 @@ private fun freqLabel(f: String) = when (f) {
 }
 
 @Composable
-private fun StepperBtn(text: String, enabled: Boolean, onClick: () -> Unit) {
+private fun StepperBtn(text: String, enabled: Boolean, dark: Boolean, onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(32.dp).clip(CircleShape)
-            .background(
-                if (enabled) ThemeGreen.copy(alpha = 0.13f)
-                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+        modifier = Modifier.size(28.dp).clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 0.07f else 0.04f))
+            .border(
+                0.5.dp,
+                (if (dark) Color.White else Color.Black).copy(alpha = 0.10f),
+                CircleShape
             )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { if (enabled) onClick() }
+            .pressable(scaleTo = 0.9f) { if (enabled) onClick() }
     ) {
         Text(
-            text, fontSize = 18.sp, fontWeight = FontWeight.Bold,
-            color = if (enabled) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            text, fontSize = 16.sp, fontWeight = FontWeight.Medium,
+            color = if (enabled) MaterialTheme.colorScheme.onBackground
+            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
         )
     }
 }
 
-/** 每周星期选择芯片：一 二 三 四 五 六 日 */
+/** 星期选择：黑白胶囊（monochrome selection） */
 @Composable
-private fun WeekdayChips(value: String, onChange: (String) -> Unit) {
+private fun WeekdayPicker(value: String, onChange: (String) -> Unit) {
     val selected = remember(value) { value.split(" ").filter { it.isNotBlank() }.toSet() }
     val names = listOf("一", "二", "三", "四", "五", "六", "日")
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+    val ink = MaterialTheme.colorScheme.onBackground
+    val paper = MaterialTheme.colorScheme.background
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
         names.forEachIndexed { idx, n ->
             val day = (idx + 1).toString()
             val sel = selected.contains(day)
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(40.dp).clip(CircleShape)
-                    .background(if (sel) ThemeGreen else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
+                modifier = Modifier.size(38.dp).clip(CircleShape)
+                    .background(if (sel) ink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f))
+                    .pressable(scaleTo = 0.9f) {
                         val next = selected.toMutableSet()
                         if (sel) next.remove(day) else next.add(day)
                         onChange(next.sortedBy { it.toIntOrNull() ?: 0 }.joinToString(" "))
                     }
             ) {
-                Text(n, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (sel) Color.White else MaterialTheme.colorScheme.onSurface)
+                Text(n, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (sel) paper else ink)
             }
         }
     }
-    if (selected.isEmpty()) {
-        Spacer(Modifier.height(6.dp))
-        Text("请至少选择一天", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+}
+
+/** 每月预设：黑白胶囊 */
+@Composable
+private fun MonthPresetPicker(value: String, onChange: (String) -> Unit) {
+    val ink = MaterialTheme.colorScheme.onBackground
+    val paper = MaterialTheme.colorScheme.background
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        listOf("1", "1 15", "5 15 25").forEach { preset ->
+            val sel = value == preset
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.clip(RoundedCornerShape(11.dp))
+                    .background(if (sel) ink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f))
+                    .pressable(scaleTo = 0.95f) { onChange(preset) }
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    if (preset == "5 15 25") "5・15・25" else preset.replace(" ", "・"),
+                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                    color = if (sel) paper else ink
+                )
+            }
+        }
     }
 }

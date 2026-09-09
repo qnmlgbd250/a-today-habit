@@ -3,7 +3,6 @@ package com.today.habit.ui.screen
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -38,8 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -53,23 +50,32 @@ import androidx.navigation.NavController
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.AuroraBackground
-import com.today.habit.ui.component.CheckRingButton
-import com.today.habit.ui.component.GlassCard
-import com.today.habit.ui.component.GlassIconButton
-import com.today.habit.ui.component.HabitTile
-import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.CheckInSoundPlayer
+import com.today.habit.ui.component.CheckRingButton
+import com.today.habit.ui.component.GlassIconButton
+import com.today.habit.ui.component.HabitIcons
+import com.today.habit.ui.component.HabitTile
+import com.today.habit.ui.component.HairlineDivider
+import com.today.habit.ui.component.HeroRing
 import com.today.habit.ui.component.IOSMenuCard
 import com.today.habit.ui.component.IOSMenuDivider
 import com.today.habit.ui.component.IOSMenuItem
 import com.today.habit.ui.component.IOSToast
+import com.today.habit.ui.component.InsetGroup
 import com.today.habit.ui.component.LargeTitleHeader
 import com.today.habit.ui.component.SFIcons
+import com.today.habit.ui.component.SectionLabel
 import com.today.habit.ui.component.accent
 import com.today.habit.ui.component.cheerOf
 import com.today.habit.ui.component.frequencyLabel
 import com.today.habit.ui.component.greetingOf
+import com.today.habit.ui.component.isDark
+import com.today.habit.ui.component.pressable
+import com.today.habit.ui.component.staggerIn
 import com.today.habit.ui.component.titleStr
+import com.today.habit.ui.theme.Body17
+import com.today.habit.ui.theme.Footnote13
+import com.today.habit.ui.theme.Headline17
 import com.today.habit.ui.theme.ThemeGreen
 import com.today.habit.ui.viewmodel.HabitViewModel
 import kotlinx.coroutines.delay
@@ -81,9 +87,9 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * 首页 2.0（旗舰重构）：
- * 极光背景 + 大标题 + 今日 hero + 本周条 + 液态玻璃习惯卡。
- * 交互：点圆环打卡一次，点卡片进入编辑，长按无（保持极简）。
+ * 首页 3.0（高级感重构）：
+ * 大标题 + 今日摘要 + 本周条 + iOS 内嵌分组习惯表。
+ * 高级感来源：纯平图标、发丝分隔、黑白选中、按压缩放、stagger 入场。
  */
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
@@ -92,6 +98,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     val lifecycleOwner = LocalLifecycleOwner.current
     var toastMessage by remember { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
+    val dark = isDark()
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -143,123 +150,125 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     }
     val totalCount = filteredHabits.size
     val progress = if (totalCount == 0) 0f else doneCount.toFloat() / totalCount.toFloat()
-    val isDark by viewModel.isDarkTheme
+    val isDarkTheme by viewModel.isDarkTheme
 
     LaunchedEffect(toastMessage) {
         if (toastMessage != null) { delay(1800); toastMessage = null }
     }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        AuroraBackground(dark = isDark)
+        AuroraBackground(dark = dark)
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 0.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             item {
-                Spacer(Modifier.statusBarsPadding().height(12.dp))
+                Spacer(Modifier.statusBarsPadding().height(10.dp))
                 LargeTitleHeader(
                     title = greetingOf(java.time.LocalTime.now().hour),
                     subtitle = selectedDate.titleStr()
                 ) {
                     GlassIconButton("plus") { navController.navigate("habit_edit/new") }
-                    GlassIconButton(if (isDark) "sun.max" else "moon") { viewModel.toggleTheme() }
+                    GlassIconButton(if (isDarkTheme) "sun.max" else "moon") { viewModel.toggleTheme() }
                     GlassIconButton("gearshape") { showMenu = !showMenu }
                 }
+                Spacer(Modifier.height(14.dp))
             }
 
-            // 今日 Hero：进度环 + 问候 + 本周迷你条入口
+            // 今日摘要
             item {
-                GlassCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        com.today.habit.ui.component.HeroRing(progress = progress)
-                        Spacer(Modifier.width(16.dp))
+                InsetGroup {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)
+                    ) {
+                        HeroRing(progress = progress, size = 58.dp, stroke = 6.dp)
+                        Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
                                 if (selectedDate == LocalDate.now()) "今日进度" else "${selectedDate.monthValue}月${selectedDate.dayOfMonth}日",
-                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                                style = Footnote13,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(Modifier.height(2.dp))
+                            Spacer(Modifier.height(1.dp))
                             Text(
-                                "$doneCount / $totalCount 已完成",
-                                fontSize = 22.sp, fontWeight = FontWeight.ExtraBold,
+                                "$doneCount / $totalCount",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = (-0.3).sp,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
-                            Spacer(Modifier.height(2.dp))
                             Text(
                                 cheerOf(doneCount, totalCount),
-                                fontSize = 13.sp,
+                                style = Footnote13,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    Spacer(Modifier.height(14.dp))
+                }
+            }
+
+            item { SectionLabel("本周") }
+            item {
+                InsetGroup {
                     WeekStrip(selectedDate) { viewModel.setSelectedDate(it) }
                 }
             }
 
-            // 习惯卡片
+            item { SectionLabel(if (totalCount == 0) "习惯" else "习惯 · 已完成 $doneCount / $totalCount") }
             if (filteredHabits.isEmpty()) {
                 item {
-                    GlassCard {
+                    InsetGroup {
                         Column(
-                            Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            Modifier.fillMaxWidth().padding(vertical = 28.dp, horizontal = 20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
-                                modifier = Modifier.size(64.dp).clip(CircleShape)
-                                    .background(ThemeGreen.copy(alpha = 0.12f))
+                                modifier = Modifier.size(68.dp).clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
                             ) {
                                 Icon(
                                     painter = painterResource(SFIcons.res("sparkles")),
-                                    contentDescription = null, tint = ThemeGreen,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
                             Spacer(Modifier.height(12.dp))
-                            Text("还没有安排习惯", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                            Text("还没有习惯", style = Headline17, color = MaterialTheme.colorScheme.onBackground)
                             Spacer(Modifier.height(4.dp))
+                            Text("点右上角 ＋ 创建第一个", style = Footnote13, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(10.dp))
                             Text(
-                                "点击右上角 ＋ 创建第一个好习惯",
-                                fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                                "新建习惯",
+                                fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = ThemeGreen,
+                                modifier = Modifier.pressable { navController.navigate("habit_edit/new") }.padding(8.dp)
                             )
-                            Spacer(Modifier.height(14.dp))
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Brush.linearGradient(listOf(Color(0xFF5BE584), ThemeGreen)))
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) { navController.navigate("habit_edit/new") }
-                                    .padding(horizontal = 28.dp, vertical = 12.dp)
-                            ) {
-                                Text("新建习惯", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            }
                         }
                     }
                 }
             } else {
-                items(filteredHabits, key = { it.id }) { habit ->
+                itemsIndexed(filteredHabits, key = { _, h -> h.id }) { index, habit ->
                     val checkIn = checkIns.find { it.habitId == habit.id }
-                    FlagshipHabitCard(
-                        habit = habit,
-                        checkIn = checkIn,
-                        onToggle = { viewModel.toggleCheckIn(habit.id, selectedDate.toString(), habit.targetCount) },
-                        onEdit = { navController.navigate("habit_edit/${habit.id}") }
-                    )
+                    InsetGroup(Modifier.staggerIn(index)) {
+                        HabitRow(
+                            habit = habit,
+                            checkIn = checkIn,
+                            onToggle = { viewModel.toggleCheckIn(habit.id, selectedDate.toString(), habit.targetCount) },
+                            onEdit = { navController.navigate("habit_edit/${habit.id}") }
+                        )
+                    }
+                    if (index < filteredHabits.size - 1) Spacer(Modifier.height(10.dp))
                 }
             }
         }
 
-        // 右上玻璃菜单
         if (showMenu) {
             Box(
-                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.08f))
+                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.06f))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -286,45 +295,45 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     }
 }
 
-/** 本周横条：周一～周日，选中态为品牌绿胶囊 */
+/** 本周横条：黑白胶囊选中（彩色只属于进度） */
 @Composable
 fun WeekStrip(selected: LocalDate, onSelect: (LocalDate) -> Unit) {
-    val weekStart = remember(selected) {
-        selected.minusDays((selected.dayOfWeek.value - 1).toLong())
-    }
+    val weekStart = remember(selected) { selected.minusDays((selected.dayOfWeek.value - 1).toLong()) }
     val days = remember(weekStart) { (0..6).map { weekStart.plusDays(it.toLong()) } }
     val today = LocalDate.now()
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+    val ink = MaterialTheme.colorScheme.onBackground
+    val paper = MaterialTheme.colorScheme.background
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
         days.forEach { date ->
             val isSel = date == selected
             val isToday = date == today
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (isSel) ThemeGreen else Color.Transparent)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onSelect(date) }
-                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(if (isSel) ink else Color.Transparent)
+                    .pressable(scaleTo = 0.93f) { onSelect(date) }
+                    .padding(horizontal = 9.dp, vertical = 7.dp)
             ) {
                 Text(
                     date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CHINESE),
                     fontSize = 11.sp, fontWeight = FontWeight.Medium,
-                    color = if (isSel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isSel) paper else MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(1.dp))
                 Text(
                     "${date.dayOfMonth}",
                     fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
-                    color = if (isSel) Color.White else MaterialTheme.colorScheme.onBackground
+                    color = if (isSel) paper else MaterialTheme.colorScheme.onBackground
                 )
                 Box(
                     Modifier.padding(top = 3.dp).size(4.dp).clip(CircleShape)
                         .background(
                             when {
-                                isSel -> Color.White
+                                isSel -> Color.Transparent
                                 isToday -> ThemeGreen
                                 else -> Color.Transparent
                             }
@@ -335,63 +344,45 @@ fun WeekStrip(selected: LocalDate, onSelect: (LocalDate) -> Unit) {
     }
 }
 
-/** 旗舰习惯卡：图标瓷砖 + 名称/副标题 + 圆环打卡键 */
+/** 习惯行：纯平瓷砖 + 标题/脚注 + 发丝圆环键 */
 @Composable
-fun FlagshipHabitCard(habit: Habit, checkIn: CheckInRecord?, onToggle: () -> Unit, onEdit: () -> Unit) {
+fun HabitRow(habit: Habit, checkIn: CheckInRecord?, onToggle: () -> Unit, onEdit: () -> Unit) {
     val context = LocalContext.current
     val accent = remember(habit.id, habit.color) { habit.accent() }
     val count = checkIn?.count ?: 0
     val done = count >= habit.targetCount
-    val surface = MaterialTheme.colorScheme.surface
-    val isDark = MaterialTheme.colorScheme.background.red < 0.5f
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(12.dp, RoundedCornerShape(24.dp), spotColor = Color.Black.copy(alpha = 0.1f))
-            .clip(RoundedCornerShape(24.dp))
-            .background(surface.copy(alpha = if (isDark) 0.74f else 0.82f))
-            .border(1.dp, Color.White.copy(alpha = if (isDark) 0.16f else 0.7f), RoundedCornerShape(24.dp))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onEdit() }
-            .padding(14.dp)
+        modifier = Modifier.fillMaxWidth()
+            .pressable(onClick = onEdit)
+            .padding(horizontal = 14.dp, vertical = 11.dp)
     ) {
         HabitTile(iconRes = HabitIcons.getRes(habit.icon), accent = accent)
-        Spacer(Modifier.width(13.dp))
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                habit.name, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                habit.name, style = Body17, fontWeight = FontWeight.SemiBold,
                 color = if (done) MaterialTheme.colorScheme.onSurfaceVariant
                 else MaterialTheme.colorScheme.onBackground,
                 maxLines = 1
             )
-            Spacer(Modifier.height(3.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier.clip(RoundedCornerShape(7.dp))
-                        .background(accent.soft)
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        "${habit.frequencyLabel()} · 目标 $count/${habit.targetCount}",
-                        fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = accent.main
-                    )
-                }
-            }
-            // 细进度条
-            if (habit.targetCount > 1) {
-                Spacer(Modifier.height(7.dp))
+            Spacer(Modifier.height(1.dp))
+            Text(
+                "${habit.frequencyLabel()} · ${if (done) "已完成" else "目标 $count/${habit.targetCount}"}",
+                style = Footnote13,
+                color = if (done) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (habit.targetCount > 1 && !done) {
+                Spacer(Modifier.height(6.dp))
                 val frac = (count.toFloat() / habit.targetCount.toFloat()).coerceIn(0f, 1f)
                 Box(
-                    Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp))
+                    Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(1.5.dp))
                         .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
                 ) {
                     Box(
-                        Modifier.fillMaxWidth(frac).height(4.dp).clip(RoundedCornerShape(2.dp))
-                            .background(Brush.horizontalGradient(listOf(accent.main, accent.gradientEnd)))
+                        Modifier.fillMaxWidth(frac).height(3.dp)
+                            .background(accent.main)
                     )
                 }
             }
