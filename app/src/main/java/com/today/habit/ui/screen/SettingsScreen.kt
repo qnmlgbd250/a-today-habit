@@ -26,7 +26,6 @@ import com.today.habit.ui.component.IOSToast
 import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.iosTopFade
-import com.today.habit.ui.component.IOSTopHaze
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSType
@@ -105,7 +104,7 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
     val isDark by viewModel.isDarkTheme
     val listState = rememberLazyListState()
     val collapsed = rememberIOSCollapsed(listState)
-    // 滚动时列表顶部 88.dp 渐隐（内容自身淡出，不可能产生线）
+    // 滚动时列表顶部渐隐（内容自身淡出；常驻雾罩已删：它的底边自己就是一条线）
     val topFade by animateDpAsState(
         targetValue = if (collapsed) 88.dp else 0.dp,
         animationSpec = tween(durationMillis = 250),
@@ -204,7 +203,6 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                         }
                     }
                 }
-                IOSTopHaze()
             }
         }
         IOSToast(toastMessage)

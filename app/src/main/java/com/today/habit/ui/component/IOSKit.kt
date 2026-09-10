@@ -226,12 +226,12 @@ fun RowScope.IOSNavAction(
 }
 
 /**
- * 列表顶部淡出：内容自身在顶部渐隐（DstIn），替代罩子方案。
- * 罩子盖得住颜色盖不住分界——罩子底边在哪，哪就可能是一条线；
- * 内容自身 alpha→0 则物理上不可能再有线，卡片阴影弧也一并化掉。
- * [fade] 为 0 时跳过绘制，静止零开销；滚动时由调用方渐变为 88.dp。
+ * 列表顶部淡出：内容自身在顶部渐隐（DstIn）。
+ * 滚动时由调用方把 [fade] 从 0 渐变为 88.dp；为 0 时跳过绘制，静止零开销。
+ *（常驻雾罩已删除：它的底边自己就是一条线。淡出经放大验证无分界。）
  */
-fun Modifier.iosTopFade(fade: Dp): Modifier = composed {   val density = LocalDensity.current
+fun Modifier.iosTopFade(fade: Dp): Modifier = composed {
+    val density = LocalDensity.current
     this
         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
         .drawWithContent {
@@ -249,31 +249,6 @@ fun Modifier.iosTopFade(fade: Dp): Modifier = composed {   val density = LocalDe
                 )
             }
         }
-}
-
-/**
- * 顶部常驻轻雾：12% 底色渐隐罩，56dp，无边，不擦除内容（只柔化）。
- * 与滚动擦除配合：雾管氛围常驻，擦除管滚动消线。本身不消费触摸。
- */
-@Composable
-fun BoxScope.IOSTopHaze() {
-    Column(
-        modifier = Modifier
-            .align(Alignment.TopCenter)
-            .fillMaxWidth()
-    ) {
-        Spacer(modifier = Modifier.statusBarsPadding())
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(IOSColors.background.copy(alpha = 0.12f), Color.Transparent)
-                    )
-                )
-        )
-    }
 }
 
 // ============================================================
