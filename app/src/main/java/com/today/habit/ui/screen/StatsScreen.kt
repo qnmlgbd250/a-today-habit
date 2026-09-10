@@ -31,6 +31,7 @@ import com.today.habit.ui.component.IOSProgressRing
 import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.iosTopFade
+import com.today.habit.ui.component.IOSTopHaze
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSHeat1
@@ -69,7 +70,7 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize().iosTopFade(topFade),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
@@ -92,6 +93,7 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                 }
             }
+            IOSTopHaze()
         }
     }
 }

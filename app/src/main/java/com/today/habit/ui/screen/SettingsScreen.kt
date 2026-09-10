@@ -4,23 +4,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -35,6 +26,7 @@ import com.today.habit.ui.component.IOSToast
 import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.iosTopFade
+import com.today.habit.ui.component.IOSTopHaze
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSType
@@ -132,18 +124,12 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize().iosTopFade(topFade),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // 品牌头
-                    item {
-                        Box(modifier = Modifier.iosEntrance("settings:brand", 0)) {
-                            SettingsBrandHeader()
-                        }
-                    }
                     // 外观
                     item {
-                        Box(modifier = Modifier.iosEntrance("settings:look", 1)) {
+                        Box(modifier = Modifier.iosEntrance("settings:look", 0)) {
                             IOSGroup(header = "外观") {
                                 IOSRow(
                                     leading = { IOSSettingsIcon("moon", IOSColors.purple) },
@@ -158,7 +144,7 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                     // 习惯
                     item {
-                        Box(modifier = Modifier.iosEntrance("settings:habits", 2)) {
+                        Box(modifier = Modifier.iosEntrance("settings:habits", 1)) {
                             IOSGroup(header = "习惯") {
                                 IOSRow(
                                     onClick = { navController.navigate("habit_edit/new") },
@@ -180,7 +166,7 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                     // 数据
                     item {
-                        Box(modifier = Modifier.iosEntrance("settings:data", 3)) {
+                        Box(modifier = Modifier.iosEntrance("settings:data", 2)) {
                             IOSGroup(
                                 header = "数据",
                                 footer = "备份文件为 JSON 格式，可在重装后恢复全部习惯与打卡记录。"
@@ -205,7 +191,7 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                     // 落款
                     item {
-                        Box(modifier = Modifier.iosEntrance("settings:sign", 4)) {
+                        Box(modifier = Modifier.iosEntrance("settings:sign", 3)) {
                             Text(
                                 "小日常 v${BuildConfig.VERSION_NAME} · 每天进步一点点",
                                 style = IOSType.footnote,
@@ -218,45 +204,9 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                         }
                     }
                 }
+                IOSTopHaze()
             }
         }
         IOSToast(toastMessage)
-    }
-}
-
-/** 品牌头：渐变徽标 + 应用名 +  slogan */
-@Composable
-private fun SettingsBrandHeader() {
-    val green = IOSColors.green
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .iosElevatedCard(18.dp)
-            .padding(18.dp)
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(58.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(lerp(green, Color.White, 0.15f), green, lerp(green, Color.Black, 0.15f))
-                    )
-                )
-        ) {
-            Icon(
-                painter = painterResource(com.today.habit.ui.component.SFIcons.res("checkmark")),
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(30.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("小日常", style = IOSType.title2, color = IOSColors.label)
-            Text("每天进步一点点", style = IOSType.subhead, color = IOSColors.secondaryLabel)
-        }
     }
 }

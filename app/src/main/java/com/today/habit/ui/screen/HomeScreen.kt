@@ -47,6 +47,7 @@ import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.iosPressable
 import com.today.habit.ui.component.iosTopFade
+import com.today.habit.ui.component.IOSTopHaze
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSType
@@ -101,35 +102,12 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                 columns = GridCells.Fixed(3),
                 state = gridState,
                 modifier = Modifier.fillMaxSize().iosTopFade(topFade),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Box(modifier = Modifier.iosEntrance("home:add", 0)) {
-                        // 右上孤零新建按钮：无标题、无日期，零铬
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 2.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            Icon(
-                                painter = painterResource(SFIcons.res("plus")),
-                                contentDescription = "新建习惯",
-                                tint = IOSColors.blue,
-                                modifier = Modifier
-                                    .iosPressable(pressedScale = 0.8f, pressedAlpha = 0.5f) {
-                                        navController.navigate("habit_edit/new")
-                                    }
-                                    .padding(8.dp)
-                                    .size(24.dp)
-                            )
-                        }
-                    }
-                }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Box(modifier = Modifier.iosEntrance("home:hero", 1)) {
+                    Box(modifier = Modifier.iosEntrance("home:hero", 0)) {
                         TodayOverviewCard(
                             doneCount = doneCount,
                             totalCount = filteredHabits.size,
@@ -138,13 +116,13 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Box(modifier = Modifier.iosEntrance("home:dates", 2)) {
+                    Box(modifier = Modifier.iosEntrance("home:dates", 1)) {
                         DateStrip(selectedDate) { viewModel.setSelectedDate(it) }
                     }
                 }
                 if (filteredHabits.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Box(modifier = Modifier.iosEntrance("home:empty", 3)) {
+                        Box(modifier = Modifier.iosEntrance("home:empty", 2)) {
                             HomeEmptyState { navController.navigate("habit_edit/new") }
                         }
                     }
@@ -153,7 +131,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                         Box(
                             modifier = Modifier.iosEntrance(
                                 key = "home:${habit.id}",
-                                index = 3 + filteredHabits.indexOf(habit).coerceAtMost(8)
+                                index = 2 + filteredHabits.indexOf(habit).coerceAtMost(8)
                             )
                         ) {
                             val checkIn = recordByHabit[habit.id]
@@ -164,6 +142,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                 }
             }
+            IOSTopHaze()
         }
     }
 }
@@ -182,7 +161,7 @@ private fun TodayOverviewCard(doneCount: Int, totalCount: Int, progress: Float) 
         else -> "已完成 $doneCount / $totalCount"
     }
     val sub = when {
-        totalCount == 0 -> "点标题旁的 + 创建第一个习惯"
+        totalCount == 0 -> "点按下方卡片，创建第一个习惯"
         doneCount == totalCount -> "太棒了，今天的目标都完成了"
         doneCount == 0 -> "还没有打卡，从第一个开始吧"
         else -> "继续加油，还差 ${totalCount - doneCount} 个"

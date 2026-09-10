@@ -231,8 +231,7 @@ fun RowScope.IOSNavAction(
  * 内容自身 alpha→0 则物理上不可能再有线，卡片阴影弧也一并化掉。
  * [fade] 为 0 时跳过绘制，静止零开销；滚动时由调用方渐变为 88.dp。
  */
-fun Modifier.iosTopFade(fade: Dp): Modifier = composed {
-    val density = LocalDensity.current
+fun Modifier.iosTopFade(fade: Dp): Modifier = composed {   val density = LocalDensity.current
     this
         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
         .drawWithContent {
@@ -250,6 +249,31 @@ fun Modifier.iosTopFade(fade: Dp): Modifier = composed {
                 )
             }
         }
+}
+
+/**
+ * 顶部常驻轻雾：12% 底色渐隐罩，56dp，无边，不擦除内容（只柔化）。
+ * 与滚动擦除配合：雾管氛围常驻，擦除管滚动消线。本身不消费触摸。
+ */
+@Composable
+fun BoxScope.IOSTopHaze() {
+    Column(
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .fillMaxWidth()
+    ) {
+        Spacer(modifier = Modifier.statusBarsPadding())
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(IOSColors.background.copy(alpha = 0.12f), Color.Transparent)
+                    )
+                )
+        )
+    }
 }
 
 // ============================================================
