@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.navigation.NavController
@@ -161,6 +160,7 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
     val cell = 13.dp
     val gap = 4.dp
     val monthH = 16.dp
+    val colW = cell + gap
     val density = LocalDensity.current
     // 自然年：从 1 月 1 日所在周的周一起，到 12 月 31 日所在周的周日止（52~53 列）
     // 年外的首尾几天留空（GitHub 同款）
@@ -250,63 +250,74 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                 modifier = Modifier
                     .weight(1f)
                     .onSizeChanged { viewportPx = it.width }
-                    .horizontalScroll(scrollState),
-                horizontalArrangement = Arrangement.spacedBy(gap)
+                    .horizontalScroll(scrollState)
             ) {
-                for (c in 0 until weekCount) {
+                // 月份标签按列绝对定位画在网格上方，不再塞进 13.dp 格子里——
+                // 格宽约束会把“X月”压扁（之前“1月”只剩一条细线），这是根治
+                Box {
                     Column {
-                        Box(
-                            contentAlignment = Alignment.CenterStart,
-                            modifier = Modifier.size(width = cell, height = monthH)
-                        ) {
-                            if (monthLabels[c].isNotEmpty()) {
-                                // 文字宽度放开到 44.dp（可向右溢出到空白列上），否则
-                                // “10月/11月/12月”会被 13.dp 格子截断成“1/11/1”
+                        Spacer(modifier = Modifier.height(monthH + gap))
+                        Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                            for (c in 0 until weekCount) {
+                                Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                                    for (r in 0 until rows) {
+                                        val date = startMonday.plusDays((c * 7 + r).toLong())
+                                        if (date.year == year && !date.isAfter(today)) {
+                                            val count = countsByDate[date.toString()] ?: 0
+                                            val selected = date == hintDate
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(cell)
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(heatmapColor(count))
+                                                    .then(
+                                                        if (selected) Modifier.border(
+                                                            1.dp,
+                                                            IOSColors.label,
+                                                            RoundedCornerShape(4.dp)
+                                                        ) else Modifier
+                                                    )
+                                                    .combinedClickable(
+                                                        interactionSource = remember { MutableInteractionSource() },
+                                                        indication = null,
+                                                        onClick = {
+                                                            hintDate = null
+                                                            onDateClick(date)
+                                                        },
+                                                        onLongClick = { hintDate = date }
+                                                    )
+                                            )
+                                        } else if (date.year == year) {
+                                            // 今年的未来日期：浅色占位格（不可点），网格不塌、后面月份不空荡
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(cell)
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(heatmapColor(0))
+                                            )
+                                        } else {
+                                            Spacer(modifier = Modifier.size(cell))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    monthLabels.forEachIndexed { c, s ->
+                        if (s.isNotEmpty()) {
+                            Box(
+                                contentAlignment = Alignment.CenterStart,
+                                modifier = Modifier
+                                    .offset(x = colW * c)
+                                    .height(monthH)
+                            ) {
                                 Text(
-                                    monthLabels[c],
+                                    s,
                                     style = IOSType.caption,
                                     color = IOSColors.tertiaryLabel,
                                     maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Visible,
-                                    // requiredWidth 冲破父级 13.dp 的约束（width 会被压到
-                                    // 13.dp，“月”字只剩左半边），向右溢出到空白列上完整显示
-                                    modifier = Modifier.requiredWidth(44.dp)
+                                    softWrap = false
                                 )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(gap))
-                        Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-                            for (r in 0 until rows) {
-                                val date = startMonday.plusDays((c * 7 + r).toLong())
-                                if (date.year == year && !date.isAfter(today)) {
-                                    val count = countsByDate[date.toString()] ?: 0
-                                    val selected = date == hintDate
-                                    Box(
-                                        modifier = Modifier
-                                            .size(cell)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(heatmapColor(count))
-                                            .then(
-                                                if (selected) Modifier.border(
-                                                    1.dp,
-                                                    IOSColors.label,
-                                                    RoundedCornerShape(4.dp)
-                                                ) else Modifier
-                                            )
-                                            .combinedClickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null,
-                                                onClick = {
-                                                    hintDate = null
-                                                    onDateClick(date)
-                                                },
-                                                onLongClick = { hintDate = date }
-                                            )
-                                    )
-                                } else {
-                                    Spacer(modifier = Modifier.size(cell))
-                                }
                             }
                         }
                     }

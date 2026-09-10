@@ -30,8 +30,8 @@ android {
         applicationId = "com.today.habit"
         minSdk = 26
         targetSdk = 35
-        versionCode = 64
-        versionName = "1.2.8"
+        versionCode = 65
+        versionName = "1.2.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
