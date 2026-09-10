@@ -1,5 +1,6 @@
 package com.today.habit.ui.screen
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -29,7 +30,7 @@ import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.IOSProgressRing
 import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
-import com.today.habit.ui.component.IOSTopScrim
+import com.today.habit.ui.component.iosTopFade
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSHeat1
@@ -50,6 +51,12 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
 
     val listState = rememberLazyListState()
     val collapsed = rememberIOSCollapsed(listState)
+    // 滚动时列表顶部 88.dp 渐隐（内容自身淡出，不可能产生线）
+    val topFade by animateDpAsState(
+        targetValue = if (collapsed) 88.dp else 0.dp,
+        animationSpec = tween(durationMillis = 250),
+        label = "topFade"
+    )
 
     Scaffold(
         containerColor = IOSColors.background
@@ -61,7 +68,7 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
         ) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().iosTopFade(topFade),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -85,7 +92,6 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                 }
             }
-            IOSTopScrim(collapsed)
         }
     }
 }

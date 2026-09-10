@@ -49,9 +49,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.StrokeCap
@@ -223,33 +226,30 @@ fun RowScope.IOSNavAction(
 }
 
 /**
- * 顶部滚动保护罩：Tab 首页无导航栏时，罩住状态栏 + 过渡带。
- * 同底色纵向渐隐（罩住卡片顶边与阴影，使其融化进底色，不可能产生线），
- * 只在折叠时淡入；平时完全透明不占视觉；本身不消费触摸。
+ * 列表顶部淡出：内容自身在顶部渐隐（DstIn），替代罩子方案。
+ * 罩子盖得住颜色盖不住分界——罩子底边在哪，哪就可能是一条线；
+ * 内容自身 alpha→0 则物理上不可能再有线，卡片阴影弧也一并化掉。
+ * [fade] 为 0 时跳过绘制，静止零开销；滚动时由调用方渐变为 88.dp。
  */
-@Composable
-fun BoxScope.IOSTopScrim(visible: Boolean) {
-    val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(durationMillis = 250),
-        label = "topScrim"
-    )
-    Column(
-        modifier = Modifier
-            .align(Alignment.TopCenter)
-            .fillMaxWidth()
-            .graphicsLayer(alpha = alpha)
-    ) {
-        Spacer(modifier = Modifier.statusBarsPadding())
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(
-                    Brush.verticalGradient(listOf(IOSColors.background, Color.Transparent))
+fun Modifier.iosTopFade(fade: Dp): Modifier = composed {
+    val density = LocalDensity.current
+    this
+        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+        .drawWithContent {
+            drawContent()
+            val fadePx = with(density) { fade.toPx() }
+            if (fadePx > 1f) {
+                val f = (fadePx / size.height).coerceIn(0f, 1f)
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        0.0f to Color.Transparent,
+                        f to Color.Black,
+                        1.0f to Color.Black
+                    ),
+                    blendMode = BlendMode.DstIn
                 )
-        )
-    }
+            }
+        }
 }
 
 // ============================================================

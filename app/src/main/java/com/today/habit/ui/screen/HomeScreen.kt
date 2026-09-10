@@ -46,7 +46,7 @@ import com.today.habit.ui.component.SFIcons
 import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.iosPressable
-import com.today.habit.ui.component.IOSTopScrim
+import com.today.habit.ui.component.iosTopFade
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSType
@@ -77,6 +77,12 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
 
     val gridState = rememberLazyGridState()
     val collapsed = rememberIOSCollapsed(gridState)
+    // 滚动时列表顶部 88.dp 渐隐（内容自身淡出，不可能产生线）
+    val topFade by animateDpAsState(
+        targetValue = if (collapsed) 88.dp else 0.dp,
+        animationSpec = tween(durationMillis = 250),
+        label = "topFade"
+    )
 
     val recordByHabit = remember(checkIns) { checkIns.associateBy { it.habitId } }
     val doneCount = filteredHabits.count { (recordByHabit[it.id]?.count ?: 0) >= it.targetCount }
@@ -94,7 +100,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 state = gridState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().iosTopFade(topFade),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -158,7 +164,6 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                 }
             }
-            IOSTopScrim(collapsed)
         }
     }
 }
