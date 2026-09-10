@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.navigation.NavController
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
@@ -180,16 +179,6 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
     }
     var hintDate by remember { mutableStateOf<LocalDate?>(null) }
     val scrollState = rememberScrollState()
-    var viewportPx by remember { mutableIntStateOf(0) }
-    val colWPx = remember(density) { with(density) { (cell + gap).toPx() } }
-    // 内容量出后定位到今天所在的列（右对齐）；年初时自然停在最左
-    LaunchedEffect(scrollState.maxValue, viewportPx) {
-        if (scrollState.maxValue > 0 && viewportPx > 0) {
-            val target = ((todayCol + 1) * colWPx - viewportPx).toInt()
-                .coerceIn(0, scrollState.maxValue)
-            scrollState.scrollTo(target)
-        }
-    }
 
     val weekdayLabels = mapOf(0 to "一", 2 to "三", 4 to "五")
     // 月份标签：只在“本年 1 号”所在的周列上标注，且标签之间至少间隔 3 列
@@ -227,97 +216,117 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                 modifier = Modifier.padding(bottom = 6.dp)
             )
         }
-        Row(modifier = Modifier.fillMaxWidth()) {
-            // 左侧星期标签（顶部留出月份栏高度以对齐）
-            Column {
-                Spacer(modifier = Modifier.height(monthH + gap))
-                Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-                    for (r in 0 until rows) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(width = 14.dp, height = cell)
-                        ) {
-                            weekdayLabels[r]?.let {
-                                Text(it, style = IOSType.caption, color = IOSColors.tertiaryLabel)
+        // 可视宽度反推格子大小：恰好容下整数列，默认位置左右两边都是完整列、不被切半
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val fitCell = remember(maxWidth) {
+                if (maxWidth <= 0.dp) cell
+                else {
+                    val n = (maxWidth / colW).toInt().coerceAtLeast(1)
+                    (maxWidth - gap * (n - 1)) / n
+                }
+            }
+            val fitColW = fitCell + gap
+            // 内容量出后定位到今天所在的列（右对齐）；列宽已凑整，左右都是完整列
+            LaunchedEffect(scrollState.maxValue, maxWidth, fitColW) {
+                val vpPx = with(density) { maxWidth.toPx() }
+                val colPx = with(density) { fitColW.toPx() }
+                if (scrollState.maxValue > 0 && vpPx > 0) {
+                    val target = ((todayCol + 1) * colPx - vpPx).toInt()
+                        .coerceIn(0, scrollState.maxValue)
+                    scrollState.scrollTo(target)
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth()) {
+                // 左侧星期标签（顶部留出月份栏高度以对齐）
+                Column {
+                    Spacer(modifier = Modifier.height(monthH + gap))
+                    Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                        for (r in 0 until rows) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(width = 14.dp, height = fitCell)
+                            ) {
+                                weekdayLabels[r]?.let {
+                                    Text(it, style = IOSType.caption, color = IOSColors.tertiaryLabel)
+                                }
                             }
                         }
                     }
                 }
-            }
-            Spacer(modifier = Modifier.width(6.dp))
-            // 右侧：月份 + 自然年周网格，横滑查看全年
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .onSizeChanged { viewportPx = it.width }
-                    .horizontalScroll(scrollState)
-            ) {
-                // 月份标签按列绝对定位画在网格上方，不再塞进 13.dp 格子里——
-                // 格宽约束会把“X月”压扁（之前“1月”只剩一条细线），这是根治
-                Box {
-                    Column {
-                        Spacer(modifier = Modifier.height(monthH + gap))
-                        Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                            for (c in 0 until weekCount) {
-                                Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-                                    for (r in 0 until rows) {
-                                        val date = startMonday.plusDays((c * 7 + r).toLong())
-                                        if (date.year == year && !date.isAfter(today)) {
-                                            val count = countsByDate[date.toString()] ?: 0
-                                            val selected = date == hintDate
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(cell)
-                                                    .clip(RoundedCornerShape(4.dp))
-                                                    .background(heatmapColor(count))
-                                                    .then(
-                                                        if (selected) Modifier.border(
-                                                            1.dp,
-                                                            IOSColors.label,
-                                                            RoundedCornerShape(4.dp)
-                                                        ) else Modifier
-                                                    )
-                                                    .combinedClickable(
-                                                        interactionSource = remember { MutableInteractionSource() },
-                                                        indication = null,
-                                                        onClick = {
-                                                            hintDate = null
-                                                            onDateClick(date)
-                                                        },
-                                                        onLongClick = { hintDate = date }
-                                                    )
-                                            )
-                                        } else if (date.year == year) {
-                                            // 今年的未来日期：浅色占位格（不可点），网格不塌、后面月份不空荡
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(cell)
-                                                    .clip(RoundedCornerShape(4.dp))
-                                                    .background(heatmapColor(0))
-                                            )
-                                        } else {
-                                            Spacer(modifier = Modifier.size(cell))
+                Spacer(modifier = Modifier.width(6.dp))
+                // 右侧：月份 + 自然年周网格，横滑查看全年
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .horizontalScroll(scrollState)
+                ) {
+                    // 月份标签按列绝对定位画在网格上方，不再塞进格子里——
+                    // 格宽约束会把“X月”压扁（之前“1月”只剩一条细线），这是根治
+                    Box {
+                        Column {
+                            Spacer(modifier = Modifier.height(monthH + gap))
+                            Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                                for (c in 0 until weekCount) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                                        for (r in 0 until rows) {
+                                            val date = startMonday.plusDays((c * 7 + r).toLong())
+                                            if (date.year == year && !date.isAfter(today)) {
+                                                val count = countsByDate[date.toString()] ?: 0
+                                                val selected = date == hintDate
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(fitCell)
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(heatmapColor(count))
+                                                        .then(
+                                                            if (selected) Modifier.border(
+                                                                1.dp,
+                                                                IOSColors.label,
+                                                                RoundedCornerShape(4.dp)
+                                                            ) else Modifier
+                                                        )
+                                                        .combinedClickable(
+                                                            interactionSource = remember { MutableInteractionSource() },
+                                                            indication = null,
+                                                            onClick = {
+                                                                hintDate = null
+                                                                onDateClick(date)
+                                                            },
+                                                            onLongClick = { hintDate = date }
+                                                        )
+                                                )
+                                            } else if (date.year == year) {
+                                                // 今年的未来日期：浅色占位格（不可点），网格不塌、后面月份不空荡
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(fitCell)
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(heatmapColor(0))
+                                                )
+                                            } else {
+                                                Spacer(modifier = Modifier.size(fitCell))
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    monthLabels.forEachIndexed { c, s ->
-                        if (s.isNotEmpty()) {
-                            Box(
-                                contentAlignment = Alignment.CenterStart,
-                                modifier = Modifier
-                                    .offset(x = colW * c)
-                                    .height(monthH)
-                            ) {
-                                Text(
-                                    s,
-                                    style = IOSType.caption,
-                                    color = IOSColors.tertiaryLabel,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
+                        monthLabels.forEachIndexed { c, s ->
+                            if (s.isNotEmpty()) {
+                                Box(
+                                    contentAlignment = Alignment.CenterStart,
+                                    modifier = Modifier
+                                        .offset(x = fitColW * c)
+                                        .height(monthH)
+                                ) {
+                                    Text(
+                                        s,
+                                        style = IOSType.caption,
+                                        color = IOSColors.tertiaryLabel,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
                             }
                         }
                     }
