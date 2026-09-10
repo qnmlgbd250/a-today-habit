@@ -25,7 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.navigation.NavController
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
@@ -44,6 +47,7 @@ import com.today.habit.ui.theme.IOSHeat5
 import com.today.habit.ui.theme.IOSType
 import com.today.habit.ui.viewmodel.HabitViewModel
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,7 +140,7 @@ private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
         HeatmapGrid(countsByDate, onDateClick)
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            "过去 1 年 · 累计打卡 $totalCount 次 · 左右滑动查看全年",
+            "今年 · 累计打卡 $totalCount 次 · 左右滑动查看全年",
             style = IOSType.footnote,
             color = IOSColors.tertiaryLabel
         )
@@ -144,47 +148,64 @@ private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
 }
 
 /**
- * GitHub 风格热力图：列=周（周一起），共 53 列覆盖过去一年，可横滑查看。
- * 顶部为月份标签，左侧标注一/三/五。初次进入自动滚到最右侧（最近）。
+ * GitHub 风格热力图：列=周（周一起），展示当前自然年 1 月~12 月，可横滑查看。
+ * 顶部为月份标签，左侧标注一/三/五。初次进入自动定位到今天所在的列。
  * 长按格子显示该日数据，点击跳转到首页对应日期。
  */
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -> Unit) {
     val today = remember { LocalDate.now() }
+    val year = today.year
     val rows = 7
-    val weekCount = 53
     val cell = 13.dp
     val gap = 4.dp
     val monthH = 16.dp
-    // 本周一 → 往前 52 周，共 53 列，尾端对齐今天
-    val startMonday = remember(today) {
-        val thisMonday = today.minusDays((today.dayOfWeek.value - 1).toLong())
-        thisMonday.minusWeeks((weekCount - 1).toLong())
+    val density = LocalDensity.current
+    // 自然年：从 1 月 1 日所在周的周一起，到 12 月 31 日所在周的周日止（52~53 列）
+    // 年外的首尾几天留空（GitHub 同款）
+    val startMonday = remember(year) {
+        val jan1 = LocalDate.of(year, 1, 1)
+        jan1.minusDays((jan1.dayOfWeek.value - 1).toLong())
+    }
+    val weekCount = remember(year, startMonday) {
+        val dec31 = LocalDate.of(year, 12, 31)
+        val endSunday = dec31.plusDays((7 - dec31.dayOfWeek.value).toLong())
+        ((ChronoUnit.DAYS.between(startMonday, endSunday).toInt() + 1) / 7)
+    }
+    // 今天所在的列（用于初始定位）
+    val todayCol = remember(today, startMonday) {
+        val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        ChronoUnit.WEEKS.between(startMonday, monday).toInt()
     }
     var hintDate by remember { mutableStateOf<LocalDate?>(null) }
     val scrollState = rememberScrollState()
-    // 内容量出后自动滚到最右（最近一周）
-    LaunchedEffect(scrollState.maxValue) {
-        if (scrollState.maxValue > 0) scrollState.scrollTo(scrollState.maxValue)
+    var viewportPx by remember { mutableIntStateOf(0) }
+    val colWPx = remember(density) { with(density) { (cell + gap).toPx() } }
+    // 内容量出后定位到今天所在的列（右对齐）；年初时自然停在最左
+    LaunchedEffect(scrollState.maxValue, viewportPx) {
+        if (scrollState.maxValue > 0 && viewportPx > 0) {
+            val target = ((todayCol + 1) * colWPx - viewportPx).toInt()
+                .coerceIn(0, scrollState.maxValue)
+            scrollState.scrollTo(target)
+        }
     }
 
     val weekdayLabels = mapOf(0 to "一", 2 to "三", 4 to "五")
-    // 月份标签：只在“包含 1 号”的周列上标注，且标签之间至少间隔 3 列
+    // 月份标签：只在“本年 1 号”所在的周列上标注，且标签之间至少间隔 3 列
     // （否则 "9月" 紧贴 "10月" 会挤在一起；GitHub 同款做法）
-    val monthLabels = remember(startMonday) {
+    val monthLabels = remember(year, startMonday, weekCount) {
         val candidate = mutableMapOf<Int, String>()
         for (c in 0 until weekCount) {
             val colFirst = startMonday.plusDays((c * 7).toLong())
             for (r in 0 until rows) {
                 val d = colFirst.plusDays(r.toLong())
-                if (d.dayOfMonth == 1) {
+                if (d.year == year && d.dayOfMonth == 1) {
                     candidate[c] = "${d.monthValue}月"
                     break
                 }
             }
         }
-        if (!candidate.containsKey(0)) candidate[0] = "${startMonday.monthValue}月"
         val labels = MutableList(weekCount) { "" }
         var lastKept = -10
         for (c in 0 until weekCount) {
@@ -224,10 +245,11 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                 }
             }
             Spacer(modifier = Modifier.width(6.dp))
-            // 右侧：月份 + 53 周网格，横滑查看全年
+            // 右侧：月份 + 自然年周网格，横滑查看全年
             Row(
                 modifier = Modifier
                     .weight(1f)
+                    .onSizeChanged { viewportPx = it.width }
                     .horizontalScroll(scrollState),
                 horizontalArrangement = Arrangement.spacedBy(gap)
             ) {
@@ -246,7 +268,10 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                                     color = IOSColors.tertiaryLabel,
                                     maxLines = 1,
                                     softWrap = false,
-                                    modifier = Modifier.width(44.dp)
+                                    overflow = TextOverflow.Visible,
+                                    // requiredWidth 冲破父级 13.dp 的约束（width 会被压到
+                                    // 13.dp，“月”字只剩左半边），向右溢出到空白列上完整显示
+                                    modifier = Modifier.requiredWidth(44.dp)
                                 )
                             }
                         }
@@ -254,7 +279,7 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                         Column(verticalArrangement = Arrangement.spacedBy(gap)) {
                             for (r in 0 until rows) {
                                 val date = startMonday.plusDays((c * 7 + r).toLong())
-                                if (!date.isAfter(today)) {
+                                if (date.year == year && !date.isAfter(today)) {
                                     val count = countsByDate[date.toString()] ?: 0
                                     val selected = date == hintDate
                                     Box(
