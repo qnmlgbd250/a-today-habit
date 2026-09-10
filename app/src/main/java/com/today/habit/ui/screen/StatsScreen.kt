@@ -25,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.navigation.NavController
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
@@ -160,7 +162,6 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
     val gap = 4.dp
     val monthH = 16.dp
     val colW = cell + gap
-    val density = LocalDensity.current
     // 自然年：从 1 月 1 日所在周的周一起，到 12 月 31 日所在周的周日止（52~53 列）
     // 年外的首尾几天留空（GitHub 同款）
     val startMonday = remember(year) {
@@ -218,20 +219,24 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
         }
         // 可视宽度反推格子大小：恰好容下整数列，默认位置左右两边都是完整列、不被切半
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val fitCell = remember(maxWidth) {
-                if (maxWidth <= 0.dp) cell
+            // 左侧星期标签占掉 14.dp + 6.dp，真正可视的是剩下的宽度（上版按整行算，定位偏了约一列）
+            val vw = maxWidth - 14.dp - 6.dp
+            val fitCell = remember(vw) {
+                if (vw <= 0.dp) cell
                 else {
-                    val n = (maxWidth / colW).toInt().coerceAtLeast(1)
-                    (maxWidth - gap * (n - 1)) / n
+                    val n = (vw / colW).toInt().coerceAtLeast(1)
+                    (vw - gap * (n - 1)) / n
                 }
             }
             val fitColW = fitCell + gap
+            // 实测可视宽度 + 今天列的真实右边缘（布局实测值，不靠公式估，杜绝半格）
+            var viewportPx by remember { mutableIntStateOf(0) }
+            var rowRootX by remember { mutableFloatStateOf(0f) }
+            var todayRight by remember { mutableFloatStateOf(-1f) }
             // 内容量出后定位到今天所在的列（右对齐）；列宽已凑整，左右都是完整列
-            LaunchedEffect(scrollState.maxValue, maxWidth, fitColW) {
-                val vpPx = with(density) { maxWidth.toPx() }
-                val colPx = with(density) { fitColW.toPx() }
-                if (scrollState.maxValue > 0 && vpPx > 0) {
-                    val target = ((todayCol + 1) * colPx - vpPx).toInt()
+            LaunchedEffect(scrollState.maxValue, viewportPx, todayRight, rowRootX) {
+                if (scrollState.maxValue > 0 && viewportPx > 0 && todayRight > 0) {
+                    val target = (todayRight - rowRootX - viewportPx).toInt()
                         .coerceIn(0, scrollState.maxValue)
                     scrollState.scrollTo(target)
                 }
@@ -258,6 +263,8 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                 Row(
                     modifier = Modifier
                         .weight(1f)
+                        .onSizeChanged { viewportPx = it.width }
+                        .onGloballyPositioned { rowRootX = it.positionInRoot().x }
                         .horizontalScroll(scrollState)
                 ) {
                     // 月份标签按列绝对定位画在网格上方，不再塞进格子里——
@@ -267,7 +274,14 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                             Spacer(modifier = Modifier.height(monthH + gap))
                             Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                                 for (c in 0 until weekCount) {
-                                    Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(gap),
+                                        modifier = Modifier.then(
+                                            if (c == todayCol) Modifier.onGloballyPositioned {
+                                                todayRight = it.positionInRoot().x + it.size.width.toFloat()
+                                            } else Modifier
+                                        )
+                                    ) {
                                         for (r in 0 until rows) {
                                             val date = startMonday.plusDays((c * 7 + r).toLong())
                                             if (date.year == year && !date.isAfter(today)) {
