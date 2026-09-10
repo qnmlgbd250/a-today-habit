@@ -26,7 +26,6 @@ import androidx.navigation.NavController
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
-import com.today.habit.ui.component.IOSLargeTitle
 import com.today.habit.ui.component.IOSProgressRing
 import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
@@ -67,12 +66,7 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Box(modifier = Modifier.iosEntrance("stats:title", 0)) {
-                        IOSLargeTitle(title = "统计")
-                    }
-                }
-                item {
-                    Box(modifier = Modifier.iosEntrance("stats:heat", 1)) {
+                    Box(modifier = Modifier.iosEntrance("stats:heat", 0)) {
                         HeatmapCard(allCheckIns) { date ->
                             viewModel.setSelectedDate(date)
                             navController.navigate("home")
@@ -83,7 +77,7 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
                     Box(
                         modifier = Modifier.iosEntrance(
                             key = "stats:${habit.id}",
-                            index = 2 + habits.indexOf(habit).coerceAtMost(8)
+                            index = 1 + habits.indexOf(habit).coerceAtMost(8)
                         )
                     ) {
                         val habitCheckIns by viewModel.getCheckInsByHabitId(habit.id).collectAsState(emptyList())

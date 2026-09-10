@@ -56,8 +56,6 @@ import java.time.format.TextStyle
 import java.util.Locale
 import androidx.compose.runtime.livedata.observeAsState
 
-private val WeekdayNames = listOf("一", "二", "三", "四", "五", "六", "日")
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
@@ -80,14 +78,6 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     val gridState = rememberLazyGridState()
     val collapsed = rememberIOSCollapsed(gridState)
 
-    val today = LocalDate.now()
-    val subtitle = if (selectedDate == today) {
-        "${today.monthValue}月${today.dayOfMonth}日 星期${WeekdayNames[today.dayOfWeek.value - 1]}"
-    } else {
-        "${selectedDate.monthValue}月${selectedDate.dayOfMonth}日 星期${WeekdayNames[selectedDate.dayOfWeek.value - 1]}"
-    }
-
-    // 今日总览
     val recordByHabit = remember(checkIns) { checkIns.associateBy { it.habitId } }
     val doneCount = filteredHabits.count { (recordByHabit[it.id]?.count ?: 0) >= it.targetCount }
     val overallProgress = if (filteredHabits.isEmpty()) 0f
@@ -110,17 +100,14 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Box(modifier = Modifier.iosEntrance("home:title", 0)) {
-                        // 大标题行内嵌新建按钮：零导航栏铬，不占额外高度
+                    Box(modifier = Modifier.iosEntrance("home:add", 0)) {
+                        // 右上孤零新建按钮：无标题、无日期，零铬
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 2.dp),
+                            horizontalArrangement = Arrangement.End
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("今日习惯", style = IOSType.largeTitle, color = IOSColors.label)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(subtitle, style = IOSType.subhead, color = IOSColors.secondaryLabel)
-                            }
                             Icon(
                                 painter = painterResource(SFIcons.res("plus")),
                                 contentDescription = "新建习惯",

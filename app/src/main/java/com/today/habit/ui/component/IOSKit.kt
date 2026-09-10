@@ -223,8 +223,9 @@ fun RowScope.IOSNavAction(
 }
 
 /**
- * 顶部滚动保护罩：Tab 首页无导航栏时，内容滚过状态栏区的同底色渐隐保护。
- * 渐变过渡（无切割线），只在折叠时淡入；平时完全透明不占视觉。
+ * 顶部滚动保护罩：Tab 首页无导航栏时，罩住状态栏 + 过渡带。
+ * 同底色纵向渐隐（罩住卡片顶边与阴影，使其融化进底色，不可能产生线），
+ * 只在折叠时淡入；平时完全透明不占视觉；本身不消费触摸。
  */
 @Composable
 fun BoxScope.IOSTopScrim(visible: Boolean) {
@@ -233,17 +234,22 @@ fun BoxScope.IOSTopScrim(visible: Boolean) {
         animationSpec = tween(durationMillis = 250),
         label = "topScrim"
     )
-    Box(
+    Column(
         modifier = Modifier
             .align(Alignment.TopCenter)
             .fillMaxWidth()
-            .statusBarsPadding()
-            .height(14.dp)
             .graphicsLayer(alpha = alpha)
-            .background(
-                Brush.verticalGradient(listOf(IOSColors.background, Color.Transparent))
-            )
-    )
+    ) {
+        Spacer(modifier = Modifier.statusBarsPadding())
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .background(
+                    Brush.verticalGradient(listOf(IOSColors.background, Color.Transparent))
+                )
+        )
+    }
 }
 
 // ============================================================

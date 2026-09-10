@@ -26,7 +26,6 @@ import com.today.habit.BuildConfig
 import com.today.habit.ui.component.IOSChevron
 import com.today.habit.ui.component.IOSDivider
 import com.today.habit.ui.component.IOSGroup
-import com.today.habit.ui.component.IOSLargeTitle
 import com.today.habit.ui.component.IOSRow
 import com.today.habit.ui.component.IOSSettingsIcon
 import com.today.habit.ui.component.IOSSwitch
@@ -128,20 +127,15 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    item {
-                        Box(modifier = Modifier.iosEntrance("settings:title", 0)) {
-                            IOSLargeTitle(title = "设置")
-                        }
-                    }
                     // 品牌头
                     item {
-                        Box(modifier = Modifier.iosEntrance("settings:brand", 1)) {
+                        Box(modifier = Modifier.iosEntrance("settings:brand", 0)) {
                             SettingsBrandHeader()
                         }
                     }
                     // 外观
                     item {
-                        Box(modifier = Modifier.iosEntrance("settings:look", 2)) {
+                        Box(modifier = Modifier.iosEntrance("settings:look", 1)) {
                             IOSGroup(header = "外观") {
                                 IOSRow(
                                     leading = { IOSSettingsIcon("moon", IOSColors.purple) },
@@ -156,7 +150,7 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                     // 习惯
                     item {
-                        Box(modifier = Modifier.iosEntrance("settings:habits", 3)) {
+                        Box(modifier = Modifier.iosEntrance("settings:habits", 2)) {
                             IOSGroup(header = "习惯") {
                                 IOSRow(
                                     onClick = { navController.navigate("habit_edit/new") },
@@ -178,7 +172,7 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                     // 数据
                     item {
-                        Box(modifier = Modifier.iosEntrance("settings:data", 4)) {
+                        Box(modifier = Modifier.iosEntrance("settings:data", 3)) {
                             IOSGroup(
                                 header = "数据",
                                 footer = "备份文件为 JSON 格式，可在重装后恢复全部习惯与打卡记录。"
@@ -203,7 +197,7 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                     // 落款
                     item {
-                        Box(modifier = Modifier.iosEntrance("settings:sign", 5)) {
+                        Box(modifier = Modifier.iosEntrance("settings:sign", 4)) {
                             Text(
                                 "小日常 v${BuildConfig.VERSION_NAME} · 每天进步一点点",
                                 style = IOSType.footnote,
