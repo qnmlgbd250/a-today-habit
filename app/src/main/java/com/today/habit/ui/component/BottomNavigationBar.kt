@@ -63,7 +63,7 @@ fun GlassBottomNavigationBar(
     val items = listOf(
         NavigationItem("home", "今日", "house"),
         NavigationItem("stats", "统计", "chart.bar"),
-        NavigationItem("settings", "设置", "gearshape")
+        NavigationItem("settings", "设置", "person")
     )
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

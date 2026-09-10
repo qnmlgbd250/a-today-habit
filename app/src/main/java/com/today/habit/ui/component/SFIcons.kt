@@ -58,6 +58,7 @@ object SFIcons {
         "paintpalette" to R.drawable.sf_paintpalette,
         "pawprint" to R.drawable.sf_pawprint,
         "pencil" to R.drawable.sf_pencil,
+        "person" to R.drawable.sf_person,
         "pill" to R.drawable.sf_pill,
         "plus" to R.drawable.sf_plus,
         "scissors" to R.drawable.sf_scissors,
@@ -81,7 +82,7 @@ object SFIcons {
         "运动健康" to listOf("figure.run", "figure.walk", "figure.hiking", "figure.yoga", "bicycle", "dumbbell", "heart", "leaf", "moon.zzz", "brain.head.profile", "pill", "stethoscope", "flame"),
         "饮食" to listOf("drop", "cup.and.saucer", "fork.knife", "birthday.cake", "cart"),
         "学习工作" to listOf("book", "graduationcap", "pencil", "character.book.closed", "function", "briefcase", "clock", "alarm", "calendar", "folder", "chevron.left.forwardslash.chevron.right", "globe", "banknote"),
-        "生活" to listOf("house", "sun.max", "pawprint", "tshirt", "wrench.and.screwdriver", "scissors", "sparkles", "cloud.rain", "snowflake"),
+        "生活" to listOf("house", "sun.max", "person", "pawprint", "tshirt", "wrench.and.screwdriver", "scissors", "sparkles", "cloud.rain", "snowflake"),
         "休闲娱乐" to listOf("music.note", "guitars", "headphones", "paintpalette", "paintbrush", "film", "tv", "gamecontroller", "sportscourt", "camera", "trophy", "star", "gift", "airplane", "car"),
     )
 
@@ -139,6 +140,7 @@ object SFIcons {
         "paintpalette" to "绘画",
         "pawprint" to "宠物",
         "pencil" to "记录",
+        "person" to "个人",
         "pill" to "用药",
         "plus" to "添加",
         "scissors" to "手工",
