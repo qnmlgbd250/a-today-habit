@@ -30,6 +30,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.today.habit.ui.theme.ConstantTrackTheme
 import com.today.habit.ui.screen.HomeScreen
 import com.today.habit.ui.screen.StatsScreen
+import com.today.habit.ui.screen.SettingsScreen
 import com.today.habit.ui.screen.ManageHabitsScreen
 import com.today.habit.ui.screen.IconPickerScreen
 import com.today.habit.ui.screen.HabitEditScreen
@@ -69,13 +70,8 @@ fun MainApp(viewModel: HabitViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val backgroundColor = MaterialTheme.colorScheme.background
-    // 全屏页面（无底栏）：管理习惯、图标选择、习惯表单、删除确认
-    val isFullScreenPage = currentRoute != null && (
-        currentRoute == "manage_habits" ||
-            currentRoute.startsWith("icon_picker") ||
-            currentRoute.startsWith("habit_edit") ||
-            currentRoute.startsWith("habit_delete")
-        )
+    // 底栏只出现在三个 Tab 页；push 出去的子页面（管理 / 图标 / 表单 / 删除）无底栏
+    val isFullScreenPage = currentRoute != "home" && currentRoute != "stats" && currentRoute != "settings"
 
     Box(
         Modifier
@@ -100,8 +96,26 @@ fun MainApp(viewModel: HabitViewModel) {
             popEnterTransition = { slideInHorizontally(tween(350)) { -it / 4 } },
             popExitTransition = { slideOutHorizontally(tween(350)) { it } }
         ) {
-            composable("home") { HomeScreen(navController, viewModel) }
-            composable("stats") { StatsScreen(navController, viewModel) }
+            // Tab 页：iOS 式直接切换，无转场动画（popEnter 保留全局值，
+            // 使子页面返回 Tab 时底层仍有滑回位移动画）
+            composable(
+                "home",
+                enterTransition = { null },
+                exitTransition = { null },
+                popExitTransition = { null }
+            ) { HomeScreen(navController, viewModel) }
+            composable(
+                "stats",
+                enterTransition = { null },
+                exitTransition = { null },
+                popExitTransition = { null }
+            ) { StatsScreen(navController, viewModel) }
+            composable(
+                "settings",
+                enterTransition = { null },
+                exitTransition = { null },
+                popExitTransition = { null }
+            ) { SettingsScreen(navController, viewModel) }
             composable("manage_habits") { ManageHabitsScreen(navController, viewModel) }
             composable("icon_picker/{selected}") { entry ->
                 IconPickerScreen(
@@ -135,7 +149,7 @@ fun MainApp(viewModel: HabitViewModel) {
             GlassBottomNavigationBar(
                 navController = navController,
                 backdrop = backdrop,
-                modifier = Modifier.navigationBarsPadding().padding(bottom = 20.dp)
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     }

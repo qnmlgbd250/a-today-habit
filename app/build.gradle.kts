@@ -1,25 +1,44 @@
-﻿plugins {
+﻿import java.util.Properties
+
+plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+}
+
+// 发行版签名：keystore 与密码随仓库提交（keystore/release.keystore + keystore/release.properties），
+// 只用仓库相对路径，多电脑通用，checkout 后零配置即可打出同签名包。
+val releaseProps = Properties().also { props ->
+    val f = rootProject.file("keystore/release.properties")
+    if (f.exists()) f.inputStream().use { props.load(it) }
 }
 
 android {
     namespace = "com.today.habit"
     compileSdk = 37
 
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("keystore/release.keystore")
+            storePassword = releaseProps.getProperty("storePassword")
+            keyAlias = releaseProps.getProperty("keyAlias")
+            keyPassword = releaseProps.getProperty("keyPassword")
+        }
+    }
+
     defaultConfig {
         applicationId = "com.today.habit"
         minSdk = 26
         targetSdk = 35
-        versionCode = 50
-        versionName = "1.0.49"
+        versionCode = 51
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -34,6 +53,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

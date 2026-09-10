@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
@@ -19,15 +18,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.today.habit.ui.theme.ThemeGreen
+import com.today.habit.ui.theme.IOSColors
+import com.today.habit.ui.theme.IOSType
 
-/** iOS 风格填充式输入框：无描边、圆角灰底，聚焦光标为主题色 */
+/** iOS 风格填充式输入框：无描边、圆角灰底 */
 @Composable
 fun IOSFormTextField(
     value: String,
@@ -37,14 +36,14 @@ fun IOSFormTextField(
     singleLine: Boolean = true,
     leadingIcon: (@Composable () -> Unit)? = null
 ) {
-    val container = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+    val container = IOSColors.tertiaryCard
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
-        placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+        placeholder = { Text(placeholder, color = IOSColors.tertiaryLabel) },
         leadingIcon = leadingIcon,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
         singleLine = singleLine,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Color.Transparent,
@@ -53,14 +52,14 @@ fun IOSFormTextField(
             focusedContainerColor = container,
             unfocusedContainerColor = container,
             disabledContainerColor = container,
-            cursorColor = ThemeGreen,
-            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+            cursorColor = IOSColors.blue,
+            focusedTextColor = IOSColors.label,
+            unfocusedTextColor = IOSColors.label
         )
     )
 }
 
-/** iOS 分段控制器（UISegmentedControl）：灰色轨道 + 白色选中段 */
+/** iOS 分段控制器（UISegmentedControl）：灰轨道 + 白色选中段 + 阴影 */
 @Composable
 fun IOSSegmentedControl(
     options: List<Pair<String, String>>,
@@ -68,12 +67,11 @@ fun IOSSegmentedControl(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val track = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(track)
+            .clip(RoundedCornerShape(9.dp))
+            .background(IOSColors.tertiaryCard)
             .padding(2.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
@@ -83,21 +81,20 @@ fun IOSSegmentedControl(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (isSel) MaterialTheme.colorScheme.surface else Color.Transparent)
-                    .border(
-                        0.5.dp,
-                        if (isSel) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f) else Color.Transparent,
-                        RoundedCornerShape(8.dp)
+                    .then(
+                        if (isSel) Modifier.shadow(2.dp, RoundedCornerShape(7.dp), clip = false)
+                        else Modifier
                     )
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(if (isSel) IOSColors.card else Color.Transparent)
                     .clickable { onSelect(id) }
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 7.dp)
             ) {
                 Text(
                     label,
                     fontSize = 13.sp,
-                    fontWeight = if (isSel) FontWeight.Medium else FontWeight.Normal,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = if (isSel) FontWeight.SemiBold else FontWeight.Normal,
+                    color = IOSColors.label,
                     maxLines = 1
                 )
             }
@@ -123,8 +120,8 @@ fun IOSSlider(
         modifier = modifier,
         colors = SliderDefaults.colors(
             thumbColor = Color.White,
-            activeTrackColor = ThemeGreen,
-            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+            activeTrackColor = IOSColors.green,
+            inactiveTrackColor = IOSColors.track
         ),
         thumb = {
             Box(
@@ -144,20 +141,20 @@ fun IOSSlider(
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f))
+                    .background(IOSColors.track)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(fraction)
                         .fillMaxHeight()
-                        .background(ThemeGreen)
+                        .background(IOSColors.green)
                 )
             }
         }
     )
 }
 
-/** iOS 风格筛选胶囊（分类标签） */
+/** iOS 风格筛选胶囊：选中蓝底白字 */
 @Composable
 fun IOSPill(
     label: String,
@@ -169,24 +166,21 @@ fun IOSPill(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(
-                if (selected) ThemeGreen
-                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
-            )
+            .background(if (selected) IOSColors.blue else IOSColors.tertiaryCard)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 7.dp)
     ) {
         Text(
             label,
             fontSize = 13.sp,
-            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
-            color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) Color.White else IOSColors.label,
             maxLines = 1
         )
     }
 }
 
-/** iOS 风格 HUD 提示（居中深色圆角胶囊，替代系统 Toast） */
+/** iOS 风格 HUD 提示（居中深色圆角胶囊） */
 @Composable
 fun IOSToast(message: String?, modifier: Modifier = Modifier) {
     if (message != null) {
@@ -205,9 +199,9 @@ fun IOSToast(message: String?, modifier: Modifier = Modifier) {
 }
 
 /**
- * iOS 拉下式菜单卡片，替代 Material DropdownMenu。
+ * iOS 下拉菜单卡片（圆角 12 + 阴影 + hairline 边框）。
  * 注意：不能用 drawBackdrop 取样 NavHost 背景——菜单位于被录制图层内部会形成自引用循环，
- * 触发 RenderThread SIGSEGV 闪退（backdrop 库已知问题），故用带阴影的半透明表面实现。
+ * 触发 RenderThread SIGSEGV 闪退（backdrop 库已知问题）。
  */
 @Composable
 fun IOSMenuCard(
@@ -216,10 +210,10 @@ fun IOSMenuCard(
 ) {
     Column(
         modifier = modifier
-            .shadow(18.dp, RoundedCornerShape(14.dp), spotColor = Color.Black.copy(alpha = 0.25f))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f), RoundedCornerShape(14.dp))
-            .border(0.5.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
-            .width(136.dp)
+            .shadow(18.dp, RoundedCornerShape(12.dp), spotColor = Color.Black.copy(alpha = 0.25f))
+            .background(IOSColors.card.copy(alpha = 0.97f), RoundedCornerShape(12.dp))
+            .border(0.5.dp, IOSColors.separator, RoundedCornerShape(12.dp))
+            .width(200.dp)
             .padding(vertical = 5.dp),
         content = content
     )
@@ -243,14 +237,13 @@ fun IOSMenuItem(
         Icon(
             painter = painterResource(SFIcons.res(iconKey)),
             contentDescription = null,
-            tint = ThemeGreen,
+            tint = IOSColors.blue,
             modifier = Modifier.size(18.dp)
         )
         Text(
             label,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
+            style = IOSType.body,
+            color = IOSColors.label
         )
     }
 }
@@ -261,6 +254,6 @@ fun IOSMenuDivider() {
     androidx.compose.material3.HorizontalDivider(
         modifier = Modifier.padding(start = 42.dp),
         thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+        color = IOSColors.separator
     )
 }

@@ -1,6 +1,10 @@
 *.iml
 .gradle
 /local.properties
+*.jks
+*.keystore
+# 发行版签名随仓库提交，多电脑通用（AGENTS.md 有证书与密码全量记录）
+!keystore/release.keystore
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml

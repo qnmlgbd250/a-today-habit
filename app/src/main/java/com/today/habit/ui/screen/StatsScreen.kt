@@ -1,11 +1,8 @@
-﻿package com.today.habit.ui.screen
+package com.today.habit.ui.screen
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -13,33 +10,39 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
-import com.today.habit.ui.component.HandDrawnSun
 import com.today.habit.ui.component.HabitIcons
+import com.today.habit.ui.component.IOSLargeTitle
+import com.today.habit.ui.component.IOSNavBar
+import com.today.habit.ui.component.IOSProgressRing
+import com.today.habit.ui.component.rememberIOSCollapsed
+import com.today.habit.ui.theme.IOSColors
+import com.today.habit.ui.theme.IOSHeat1
+import com.today.habit.ui.theme.IOSHeat2
+import com.today.habit.ui.theme.IOSHeat3
+import com.today.habit.ui.theme.IOSHeat4
+import com.today.habit.ui.theme.IOSHeat5
+import com.today.habit.ui.theme.IOSGrayLight
+import com.today.habit.ui.theme.IOSType
 import com.today.habit.ui.viewmodel.HabitViewModel
 import java.time.LocalDate
-import com.today.habit.ui.theme.ThemeGreen
-import com.today.habit.ui.theme.ThemeGreenDark
-import androidx.navigation.NavController
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,102 +50,99 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
     val habits by viewModel.allHabits.observeAsState(emptyList())
     val allCheckIns by viewModel.allCheckIns.observeAsState(emptyList())
 
+    val listState = rememberLazyListState()
+    val collapsed = rememberIOSCollapsed(listState)
+
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("统计回顾", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
-            )
+            IOSNavBar(title = "统计", showTitle = collapsed, elevated = collapsed)
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = IOSColors.background
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.padding(padding).fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 112.dp),
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 上区：合并热力图
             item {
-                CombinedHeatmapCard(allCheckIns) { date -> viewModel.setSelectedDate(date); navController.navigate("home") }
+                IOSLargeTitle(title = "统计")
             }
-
-            // 下区：习惯列表
+            // 热力图卡
+            item {
+                HeatmapCard(allCheckIns) { date ->
+                    viewModel.setSelectedDate(date)
+                    navController.navigate("home")
+                }
+            }
+            // 习惯回顾
             items(habits, key = { it.id }) { habit ->
                 val habitCheckIns by viewModel.getCheckInsByHabitId(habit.id).collectAsState(emptyList())
-                HabitStatsItem(habit, habitCheckIns)
+                HabitStatsCard(habit, habitCheckIns)
             }
         }
     }
 }
 
 @Composable
-fun CombinedHeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDate) -> Unit) {
-    val checkInCountsByDate = remember(allCheckIns) {
+private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDate) -> Unit) {
+    val countsByDate = remember(allCheckIns) {
         allCheckIns.groupBy { it.date }.mapValues { it.value.size }
     }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(IOSColors.card)
+            .padding(16.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            // 标题与图例并排显示在顶部
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = "打卡热力图", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                
-                // 图例
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("少", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    listOf(0, 1, 3, 5, 7).forEach { level ->
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(getHeatmapColor(level))
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                    }
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text("多", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("打卡热力图", style = IOSType.headline, color = IOSColors.label)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("少", style = IOSType.caption, color = IOSColors.secondaryLabel)
+                Spacer(modifier = Modifier.width(4.dp))
+                listOf(0, 1, 3, 5, 7).forEach { level ->
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(heatmapColor(level))
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
                 }
+                Text("多", style = IOSType.caption, color = IOSColors.secondaryLabel)
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            MultiLevelHeatmap(checkInCountsByDate, onDateClick)
         }
+        Spacer(modifier = Modifier.height(14.dp))
+        HeatmapGrid(countsByDate, onDateClick)
     }
 }
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun MultiLevelHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -> Unit) {
+private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -> Unit) {
     val today = remember { LocalDate.now() }
-    val daysToDisplay = 105 
+    val totalDays = 105
     val dates = remember(today) {
-        (0 until daysToDisplay).map { today.minusDays(it.toLong()) }.reversed()
+        (0 until totalDays).map { today.minusDays(it.toLong()) }.reversed()
     }
-
-    val rows = 7 
-    val cols = daysToDisplay / rows
-    var hoveredDate by remember { mutableStateOf<LocalDate?>(null) }
+    val rows = 7
+    val cols = totalDays / rows
+    var hintDate by remember { mutableStateOf<LocalDate?>(null) }
 
     Column {
-        if (hoveredDate != null) {
+        if (hintDate != null) {
             Text(
-                text = "${hoveredDate!!.monthValue}月${hoveredDate!!.dayOfMonth}日",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 4.dp)
+                "${hintDate!!.monthValue}月${hintDate!!.dayOfMonth}日 · ${countsByDate[hintDate.toString()] ?: 0} 次打卡",
+                style = IOSType.footnote,
+                color = IOSColors.secondaryLabel,
+                modifier = Modifier.padding(bottom = 6.dp)
             )
         }
         Row(
@@ -159,14 +159,16 @@ fun MultiLevelHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -
                             Box(
                                 modifier = Modifier
                                     .size(13.dp)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(getHeatmapColor(count))
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(heatmapColor(count))
                                     .combinedClickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
                                         onClick = {
-                                            hoveredDate = null
+                                            hintDate = null
                                             onDateClick(date)
                                         },
-                                        onLongClick = { hoveredDate = date }
+                                        onLongClick = { hintDate = date }
                                     )
                             )
                         }
@@ -176,101 +178,77 @@ fun MultiLevelHeatmap(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -
         }
     }
 }
-fun getHeatmapColor(count: Int): Color {
+
+@Composable
+private fun heatmapColor(count: Int): Color {
+    val empty = IOSColors.heatEmpty
     return when {
-        count == 0 -> Color.LightGray.copy(alpha = 0.2f)
-        count <= 2 -> Color(0xFFC8E6C9) 
-        count <= 4 -> Color(0xFF81C784) 
-        count <= 6 -> Color(0xFF4CAF50) 
-        count <= 8 -> Color(0xFF2E7D32) 
-        else -> Color(0xFF1B5E20)       
+        count == 0 -> empty
+        count <= 2 -> IOSHeat1
+        count <= 4 -> IOSHeat2
+        count <= 6 -> IOSHeat3
+        count <= 8 -> IOSHeat4
+        else -> IOSHeat5
     }
 }
 
 @Composable
-fun HabitStatsItem(habit: Habit, checkIns: List<CheckInRecord>) {
-    // 只有打卡次数 >= 目标次数的记录才被视为“已完成”
+private fun HabitStatsCard(habit: Habit, checkIns: List<CheckInRecord>) {
+    // 只有打卡次数 >= 目标次数的记录才视为"已完成"
     val completedCheckIns = remember(checkIns, habit.targetCount) {
         checkIns.filter { it.count >= habit.targetCount }
     }
-    
     val totalCount = completedCheckIns.size
     val streak = calculateStreak(habit, completedCheckIns)
-    
-    // 进度环比例：以21天为一个阶段目标
-    val targetDays = 21f
-    val progress = animateFloatAsState(
-        targetValue = (totalCount.toFloat() / targetDays).coerceAtMost(1f),
+
+    // 以 21 天为一个阶段
+    val progress by animateFloatAsState(
+        targetValue = (totalCount.toFloat() / 21f).coerceAtMost(1f),
         animationSpec = tween(durationMillis = 800),
-        label = "StatsProgress"
+        label = "statsProgress"
     )
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(IOSColors.card)
+            .padding(16.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        IOSProgressRing(
+            progress = progress,
+            strokeWidth = 4.dp,
+            modifier = Modifier.size(54.dp)
         ) {
-            Box(
-                modifier = Modifier.size(52.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // 进度环
-                Canvas(modifier = Modifier.size(48.dp)) {
-                    drawArc(
-                        color = Color.LightGray.copy(alpha = 0.2f),
-                        startAngle = 0f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                    if (progress.value > 0f) {
-                        drawArc(
-                            color = ThemeGreen,
-                            startAngle = -90f,
-                            sweepAngle = 360f * progress.value,
-                            useCenter = false,
-                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-                        )
-                    }
-                }
-                
-                // 图标
-                Icon(
-                    painter = painterResource(HabitIcons.getRes(habit.icon)),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = if (progress.value >= 1f) ThemeGreenDark else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = habit.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    text = "累计打卡 $totalCount 次",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = streak.toString(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "连续${when (habit.frequency) { "WEEKLY" -> "周"; "MONTHLY" -> "月"; else -> "打卡" }}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Icon(
+                painter = painterResource(HabitIcons.getRes(habit.icon)),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = if (progress >= 1f) IOSColors.green else IOSGrayLight
+            )
+        }
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(habit.name, style = IOSType.headline, color = IOSColors.label, maxLines = 1)
+            Text(
+                "累计打卡 $totalCount 次",
+                style = IOSType.subhead,
+                color = IOSColors.secondaryLabel
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                "$streak",
+                style = IOSType.title1,
+                fontWeight = FontWeight.Bold,
+                color = IOSColors.label
+            )
+            Text(
+                "连续${when (habit.frequency) { "WEEKLY" -> "周"; "MONTHLY" -> "月"; else -> "天" }}",
+                style = IOSType.caption,
+                color = IOSColors.secondaryLabel
+            )
         }
     }
 }
@@ -282,12 +260,9 @@ fun calculateStreak(habit: Habit, checkIns: List<CheckInRecord>): Int {
 
     when (habit.frequency) {
         "MONTHLY" -> {
-            // 按月连续：从当前月往回看，每个月都有打卡记录
             var year = LocalDate.now().year
             var month = LocalDate.now().monthValue
-            // 如果本月还没打卡，从上个月开始
-            val thisMonthDates = dates.filter { it.year == year && it.monthValue == month }
-            if (thisMonthDates.isEmpty()) {
+            if (dates.none { it.year == year && it.monthValue == month }) {
                 month--
                 if (month == 0) { month = 12; year-- }
             }
@@ -298,12 +273,9 @@ fun calculateStreak(habit: Habit, checkIns: List<CheckInRecord>): Int {
             }
         }
         "WEEKLY" -> {
-            // 按周连续：从当前周往回看，每周都有打卡记录
             val today = LocalDate.now()
-            var weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1) // 本周一
-            // 如果本周还没打卡，从上周开始
-            val thisWeekDates = dates.filter { !it.isBefore(weekStart) && !it.isAfter(weekStart.plusDays(6)) }
-            if (thisWeekDates.isEmpty()) {
+            var weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
+            if (dates.none { !it.isBefore(weekStart) && !it.isAfter(weekStart.plusDays(6)) }) {
                 weekStart = weekStart.minusWeeks(1)
             }
             while (dates.any { !it.isBefore(weekStart) && !it.isAfter(weekStart.plusDays(6)) }) {
@@ -312,7 +284,6 @@ fun calculateStreak(habit: Habit, checkIns: List<CheckInRecord>): Int {
             }
         }
         else -> {
-            // DAILY / WEEKDAYS：按天连续
             var currentDate = LocalDate.now()
             if (!dates.contains(currentDate)) {
                 currentDate = currentDate.minusDays(1)

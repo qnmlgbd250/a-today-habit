@@ -1,0 +1,201 @@
+package com.today.habit.ui.screen
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.today.habit.BuildConfig
+import com.today.habit.ui.component.IOSChevron
+import com.today.habit.ui.component.IOSDivider
+import com.today.habit.ui.component.IOSGroup
+import com.today.habit.ui.component.IOSLargeTitle
+import com.today.habit.ui.component.IOSNavBar
+import com.today.habit.ui.component.IOSRow
+import com.today.habit.ui.component.IOSSettingsIcon
+import com.today.habit.ui.component.IOSSwitch
+import com.today.habit.ui.component.IOSToast
+import com.today.habit.ui.component.rememberIOSCollapsed
+import com.today.habit.ui.theme.IOSColors
+import com.today.habit.ui.theme.IOSType
+import com.today.habit.ui.viewmodel.HabitViewModel
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.time.LocalDate
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+/**
+ * 设置页（iOS 设置风分组列表）：外观 / 习惯 / 数据 / 关于。
+ * 备份恢复逻辑由首页迁移至此。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
+    val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(toastMessage) {
+        if (toastMessage != null) {
+            delay(1800)
+            toastMessage = null
+        }
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                try {
+                    val json = viewModel.exportDataJson()
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        OutputStreamWriter(outputStream).use { writer ->
+                            writer.write(json)
+                        }
+                    }
+                    toastMessage = "备份成功"
+                } catch (e: Exception) {
+                    toastMessage = "备份失败"
+                }
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                try {
+                    context.contentResolver.openInputStream(it)?.use { inputStream ->
+                        InputStreamReader(inputStream).use { reader ->
+                            val json = reader.readText()
+                            viewModel.importDataJson(json) { success, message ->
+                                toastMessage = if (success) {
+                                    val current = viewModel.selectedDate.value
+                                    viewModel.setSelectedDate(current)
+                                    "恢复成功"
+                                } else {
+                                    "恢复失败：$message"
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    toastMessage = "文件读取失败"
+                }
+            }
+        }
+    }
+
+    val isDark by viewModel.isDarkTheme
+    val listState = rememberLazyListState()
+    val collapsed = rememberIOSCollapsed(listState)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                IOSNavBar(title = "设置", showTitle = collapsed, elevated = collapsed)
+            },
+            containerColor = IOSColors.background
+        ) { padding ->
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                item {
+                    IOSLargeTitle(title = "设置")
+                }
+                // 外观
+                item {
+                    IOSGroup(header = "外观") {
+                        IOSRow(
+                            leading = { IOSSettingsIcon("moon", IOSColors.purple) },
+                            trailing = {
+                                IOSSwitch(checked = isDark, onCheckedChange = { viewModel.toggleTheme() })
+                            }
+                        ) {
+                            Text("深色模式", style = IOSType.body, color = IOSColors.label)
+                        }
+                    }
+                }
+                // 习惯
+                item {
+                    IOSGroup(header = "习惯") {
+                        IOSRow(
+                            onClick = { navController.navigate("habit_edit/new") },
+                            leading = { IOSSettingsIcon("plus", IOSColors.green) },
+                            trailing = { IOSChevron() }
+                        ) {
+                            Text("新建习惯", style = IOSType.body, color = IOSColors.label)
+                        }
+                        IOSDivider()
+                        IOSRow(
+                            onClick = { navController.navigate("manage_habits") },
+                            leading = { IOSSettingsIcon("gearshape", IOSColors.gray) },
+                            trailing = { IOSChevron() }
+                        ) {
+                            Text("管理习惯", style = IOSType.body, color = IOSColors.label)
+                        }
+                    }
+                }
+                // 数据
+                item {
+                    IOSGroup(
+                        header = "数据",
+                        footer = "备份文件为 JSON 格式，可在重装后恢复全部习惯与打卡记录。"
+                    ) {
+                        IOSRow(
+                            onClick = { exportLauncher.launch("habit_backup_${LocalDate.now()}.json") },
+                            leading = { IOSSettingsIcon("square.and.arrow.up", IOSColors.blue) },
+                            trailing = { IOSChevron() }
+                        ) {
+                            Text("备份数据", style = IOSType.body, color = IOSColors.label)
+                        }
+                        IOSDivider()
+                        IOSRow(
+                            onClick = { importLauncher.launch(arrayOf("application/json")) },
+                            leading = { IOSSettingsIcon("clock.arrow.circlepath", IOSColors.orange) },
+                            trailing = { IOSChevron() }
+                        ) {
+                            Text("恢复数据", style = IOSType.body, color = IOSColors.label)
+                        }
+                    }
+                }
+                // 关于
+                item {
+                    IOSGroup(
+                        header = "关于",
+                        footer = "小日常 · 每天进步一点点"
+                    ) {
+                        IOSRow(
+                            trailing = {
+                                Text(
+                                    "v${BuildConfig.VERSION_NAME}",
+                                    style = IOSType.body,
+                                    color = IOSColors.secondaryLabel
+                                )
+                            }
+                        ) {
+                            Text("版本", style = IOSType.body, color = IOSColors.label)
+                        }
+                    }
+                }
+            }
+        }
+        IOSToast(toastMessage)
+    }
+}

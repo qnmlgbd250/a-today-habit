@@ -13,24 +13,37 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFE0E0E0),
-    secondary = Color(0xFFB0B0B0),
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E)
+    primary = IOSBlueDark,
+    onPrimary = Color.White,
+    secondary = IOSGreenDark,
+    background = IOSGroupedDark,
+    surface = IOSCardDark,
+    surfaceVariant = IOSTertiaryCardDark,
+    onBackground = IOSLabelDark,
+    onSurface = IOSLabelDark,
+    onSurfaceVariant = IOSSecondaryLabelDark,
+    outline = IOSSeparatorDark,
+    error = IOSRedDark,
+    onError = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryColor,
-    secondary = SecondaryColor,
-    background = SoftWhiteBackground,
-    surface = SoftWhiteSurface,
-    onBackground = Color(0xFF1C1B17),
-    onSurface = Color(0xFF1C1B17)
+    primary = IOSBlueLight,
+    onPrimary = Color.White,
+    secondary = IOSGreenLight,
+    background = IOSGroupedLight,
+    surface = IOSCardLight,
+    surfaceVariant = IOSGray6,
+    onBackground = IOSLabelLight,
+    onSurface = IOSLabelLight,
+    onSurfaceVariant = IOSSecondaryLabelLight,
+    outline = IOSSeparatorLight,
+    error = IOSRedLight,
+    onError = Color.White
 )
 
 @Composable
@@ -43,6 +56,7 @@ fun ConstantTrackTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            // iOS 式全屏沉浸：状态栏 / 手势条图标随主题反色
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
             WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
         }
@@ -52,7 +66,7 @@ fun ConstantTrackTheme(
         colorScheme = colorScheme,
         typography = Typography
     ) {
-        // 去 Android 化：全局关闭 Material 水波纹（iOS 无 ripple 交互反馈）
+        // 去 Android 化：全局关闭 Material 水波纹（iOS 用按压缩放 / 灰底高亮反馈）
         CompositionLocalProvider(LocalIndication provides NoIndication) {
             content()
         }
@@ -67,4 +81,3 @@ private object NoIndication : IndicationNodeFactory {
 }
 
 private class EmptyNode : Modifier.Node()
-

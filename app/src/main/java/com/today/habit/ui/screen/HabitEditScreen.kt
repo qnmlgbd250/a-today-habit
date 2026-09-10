@@ -1,43 +1,44 @@
 package com.today.habit.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.today.habit.ui.component.HabitIcons
-import com.today.habit.ui.component.SFIcons
-import com.today.habit.ui.component.IOSFormTextField
+import com.today.habit.ui.component.IOSChevron
+import com.today.habit.ui.component.IOSDivider
+import com.today.habit.ui.component.IOSGroup
+import com.today.habit.ui.component.IOSInlineTextField
+import com.today.habit.ui.component.IOSLargeTitle
+import com.today.habit.ui.component.IOSNavAction
+import com.today.habit.ui.component.IOSNavBar
+import com.today.habit.ui.component.IOSRow
 import com.today.habit.ui.component.IOSSegmentedControl
-import com.today.habit.ui.component.IOSSlider
-import com.today.habit.ui.theme.ThemeGreen
+import com.today.habit.ui.component.IOSStepper
+import com.today.habit.ui.component.IOSWeekdayPicker
+import com.today.habit.ui.component.SFIcons
+import com.today.habit.ui.component.iosPressable
+import com.today.habit.ui.component.rememberIOSCollapsed
+import com.today.habit.ui.theme.IOSColors
+import com.today.habit.ui.theme.IOSType
 import com.today.habit.ui.viewmodel.HabitViewModel
 
 /**
- * 新建/编辑习惯的统一表单页面（替代原弹窗）。
+ * 新建/编辑习惯的统一表单页面（iOS 设置表单风）。
  * 路由：habit_edit/new 为新建，habit_edit/{id} 为编辑。
  * 图标选择跳转图标库页面，结果经 savedStateHandle 的 picked_icon 回传。
  */
@@ -77,139 +78,174 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
         }
     }
 
+    // 周几选择（frequencyValue 存 "1 3 5"，1=周一 … 7=周日）
+    val selectedWeekdays = remember(frequencyValue) {
+        frequencyValue.split(" ").mapNotNull { it.toIntOrNull() }.filter { it in 1..7 }.toSet()
+    }
+
     fun save() {
         if (name.isBlank()) return
         if (isNew) {
-            viewModel.insertHabit(name, "", frequency, frequencyValue, icon, targetCount)
+            viewModel.insertHabit(name.trim(), "", frequency, frequencyValue, icon, targetCount)
         } else if (existing != null) {
-            viewModel.updateHabit(existing.copy(name = name, frequency = frequency, frequencyValue = frequencyValue, icon = icon, targetCount = targetCount))
+            viewModel.updateHabit(
+                existing.copy(
+                    name = name.trim(),
+                    frequency = frequency,
+                    frequencyValue = frequencyValue,
+                    icon = icon,
+                    targetCount = targetCount
+                )
+            )
         }
         navController.popBackStack()
     }
 
+    val listState = rememberLazyListState()
+    val collapsed = rememberIOSCollapsed(listState)
+    val title = if (isNew) "新建习惯" else "编辑习惯"
+
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(if (isNew) "新建习惯" else "编辑习惯", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            painter = painterResource(SFIcons.res("chevron.left")),
-                            contentDescription = "返回",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                },
+            IOSNavBar(
+                title = title,
+                onBack = { navController.popBackStack() },
+                showTitle = collapsed,
+                elevated = collapsed,
                 actions = {
-                    TextButton(
-                        onClick = { save() },
-                        enabled = name.isNotBlank()
-                    ) {
-                        Text("保存", color = if (name.isNotBlank()) ThemeGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontWeight = FontWeight.SemiBold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
+                    IOSNavAction(label = "保存", enabled = name.isNotBlank(), onClick = ::save)
+                }
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = IOSColors.background
     ) { padding ->
-        Column(
+        LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .padding(padding),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // 图标（跳转图标库页面）
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clickable {
-                        navController.currentBackStackEntry?.savedStateHandle?.set("current_icon", icon)
-                        navController.navigate("icon_picker/$icon")
-                    }
-                    .padding(14.dp)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(ThemeGreen.copy(alpha = 0.15f))
-                ) {
-                    Icon(
-                        painter = painterResource(HabitIcons.getRes(icon)),
-                        contentDescription = null,
-                        tint = ThemeGreen,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("图标", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(SFIcons.label(HabitIcons.resKey(icon)), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                }
-                Icon(
-                    painter = painterResource(SFIcons.res("chevron.right")),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(14.dp)
-                )
+            item {
+                IOSLargeTitle(title = title)
             }
-
-            // 名称
-            IOSFormTextField(
-                value = name,
-                onValueChange = { name = it },
-                placeholder = "例如：早起跑步"
-            )
-
-            // 目标次数
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val targetLabel = when (frequency) {
-                        "DAILY" -> "目标次数 (每日)"
-                        "WEEKDAYS" -> "目标次数 (工作日)"
-                        "WEEKLY" -> "目标次数 (每周)"
-                        "MONTHLY" -> "目标次数 (每月)"
-                        else -> "目标次数 (每日)"
+            // 内容组
+            item {
+                IOSGroup {
+                    // 图标行
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(IOSColors.card)
+                            .iosPressable {
+                                navController.currentBackStackEntry?.savedStateHandle?.set("current_icon", icon)
+                                navController.navigate("icon_picker/$icon")
+                            }
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(IOSColors.green.copy(alpha = 0.14f))
+                        ) {
+                            Icon(
+                                painter = painterResource(HabitIcons.getRes(icon)),
+                                contentDescription = null,
+                                tint = IOSColors.green,
+                                modifier = Modifier.size(21.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("图标", style = IOSType.footnote, color = IOSColors.secondaryLabel)
+                            Text(
+                                SFIcons.label(HabitIcons.resKey(icon)),
+                                style = IOSType.body,
+                                color = IOSColors.label
+                            )
+                        }
+                        IOSChevron()
                     }
-                    Text(targetLabel, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("$targetCount 次", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = ThemeGreen)
+                    IOSDivider()
+                    // 名称行
+                    IOSRow {
+                        IOSInlineTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            placeholder = "名称，例如：早起跑步"
+                        )
+                    }
                 }
-                IOSSlider(
-                    value = targetCount.toFloat(),
-                    onValueChange = { targetCount = it.toInt() },
-                    valueRange = 1f..10f,
-                    steps = 8,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
-
-            // 重复周期（iOS 分段控制器）
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("重复周期", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                IOSSegmentedControl(
-                    options = listOf("DAILY" to "每天", "WEEKDAYS" to "工作日", "WEEKLY" to "每周", "MONTHLY" to "每月"),
-                    selected = frequency,
-                    onSelect = { frequency = it; if (it == "DAILY" || it == "WEEKDAYS") frequencyValue = "" }
-                )
-                if (frequency == "WEEKLY" || frequency == "MONTHLY") {
-                    IOSFormTextField(
-                        value = frequencyValue,
-                        onValueChange = { frequencyValue = it },
-                        placeholder = if (frequency == "WEEKLY") "例如: 1 3 5 (周几)" else "例如: 1 15 (几号)"
-                    )
+            // 目标组
+            item {
+                IOSGroup(
+                    header = "目标",
+                    footer = when (frequency) {
+                        "WEEKLY" -> "选择每周重复的星期。"
+                        "MONTHLY" -> "输入每月重复的日期，多个日期用空格分隔。"
+                        else -> null
+                    }
+                ) {
+                    IOSRow(
+                        trailing = {
+                            IOSStepper(
+                                value = targetCount,
+                                onValueChange = { targetCount = it },
+                                range = 1..10
+                            )
+                        }
+                    ) {
+                        Text(
+                            "每次目标 ${targetCount} 次",
+                            style = IOSType.body,
+                            color = IOSColors.label
+                        )
+                    }
+                    IOSDivider()
+                    // 重复周期
+                    IOSRow {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text("重复", style = IOSType.body, color = IOSColors.label)
+                            IOSSegmentedControl(
+                                options = listOf(
+                                    "DAILY" to "每天",
+                                    "WEEKDAYS" to "工作日",
+                                    "WEEKLY" to "每周",
+                                    "MONTHLY" to "每月"
+                                ),
+                                selected = frequency,
+                                onSelect = {
+                                    frequency = it
+                                    if (it == "DAILY" || it == "WEEKDAYS") frequencyValue = ""
+                                }
+                            )
+                            if (frequency == "WEEKLY") {
+                                IOSWeekdayPicker(
+                                    selected = selectedWeekdays,
+                                    onToggle = { day ->
+                                        val next = selectedWeekdays.toMutableSet()
+                                        if (!next.add(day)) next.remove(day)
+                                        frequencyValue = next.sorted().joinToString(" ")
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    if (frequency == "MONTHLY") {
+                        IOSDivider()
+                        IOSRow {
+                            IOSInlineTextField(
+                                value = frequencyValue,
+                                onValueChange = { frequencyValue = it.filter { c -> c.isDigit() || c == ' ' } },
+                                placeholder = "日期，例如：1 15"
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -1,18 +1,12 @@
 package com.today.habit.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,17 +17,24 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.today.habit.ui.component.HabitIcons
+import com.today.habit.ui.component.IOSActionRow
+import com.today.habit.ui.component.IOSGroup
+import com.today.habit.ui.component.IOSNavBar
 import com.today.habit.ui.component.SFIcons
+import com.today.habit.ui.component.iosPressable
+import com.today.habit.ui.theme.IOSColors
+import com.today.habit.ui.theme.IOSType
 import com.today.habit.ui.viewmodel.HabitViewModel
 
 /**
- * 删除习惯确认页面（替代原确认弹窗，iOS 两步确认交互）。
- * 第一次点击按钮进入"确认删除"状态，再次点击才真正删除。
+ * 删除习惯确认页面（iOS 红色操作组，两步确认）。
+ * 第一次点击删除行进入"确认删除"状态（按钮变红），再次点击才真正删除。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,126 +43,100 @@ fun DeleteHabitScreen(navController: NavController, viewModel: HabitViewModel, h
     val habits by viewModel.allHabits.observeAsState(emptyList())
     val habit = habits.find { it.id == id }
 
-    // 第二次点击才执行删除
     var armed by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(habit?.id) { if (habit == null) armed = false }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("删除习惯", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            painter = painterResource(SFIcons.res("chevron.left")),
-                            contentDescription = "返回",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
+            IOSNavBar(
+                title = "删除习惯",
+                onBack = { navController.popBackStack() },
+                elevated = true
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = IOSColors.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            Spacer(modifier = Modifier.height(12.dp))
             if (habit != null) {
-                // 习惯概览卡片
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(16.dp)
+                // 习惯概览
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(IOSColors.red.copy(alpha = 0.12f))
                     ) {
                         Icon(
                             painter = painterResource(HabitIcons.getRes(habit.icon)),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                            modifier = Modifier.size(24.dp)
+                            tint = IOSColors.red,
+                            modifier = Modifier.size(36.dp)
                         )
                     }
-                    Column {
-                        Text(habit.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        val frequencyLabel = when (habit.frequency) {
-                            "DAILY" -> "日"
-                            "WEEKDAYS" -> "工作日"
-                            "WEEKLY" -> "周"
-                            "MONTHLY" -> "月"
-                            else -> "日"
-                        }
-                        Text(
-                            "目标: ${habit.targetCount} 次/$frequencyLabel",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        "删除「${habit.name}」？",
+                        style = IOSType.title2,
+                        color = IOSColors.label,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        "该习惯的全部打卡记录将一并删除，且无法恢复。",
+                        style = IOSType.subhead,
+                        color = IOSColors.secondaryLabel,
+                        textAlign = TextAlign.Center
+                    )
                 }
 
-                Text(
-                    "删除后，该习惯的全部打卡记录将一并删除，且无法恢复。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                // iOS 列表卡片式操作按钮
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                            .clickable {
-                                if (armed) {
-                                    viewModel.deleteHabit(habit)
-                                    navController.popBackStack()
-                                } else {
-                                    armed = true
-                                }
-                            }
-                            .padding(vertical = 15.dp)
-                    ) {
-                        Text(
-                            if (armed) "确认删除" else "删除习惯",
-                            color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                // iOS 红色操作组
+                IOSGroup {
                     if (armed) {
+                        // 确认态：整行变红
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(MaterialTheme.colorScheme.surface)
-                                .clickable { armed = false }
-                                .padding(vertical = 15.dp)
+                                .background(IOSColors.red)
+                                .iosPressable {
+                                    viewModel.deleteHabit(habit)
+                                    navController.popBackStack()
+                                }
+                                .padding(vertical = 13.dp)
                         ) {
-                            Text("取消", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                            Text("确认删除", style = IOSType.body, color = Color.White)
                         }
+                    } else {
+                        IOSActionRow(
+                            label = "删除习惯",
+                            color = IOSColors.red,
+                            onClick = { armed = true }
+                        )
+                    }
+                }
+                if (armed) {
+                    IOSGroup {
+                        IOSActionRow(
+                            label = "取消",
+                            color = IOSColors.blue,
+                            onClick = { armed = false }
+                        )
                     }
                 }
             } else {
-                Text("习惯不存在或已被删除", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text("习惯不存在或已被删除", style = IOSType.body, color = IOSColors.secondaryLabel)
+                }
             }
         }
     }
