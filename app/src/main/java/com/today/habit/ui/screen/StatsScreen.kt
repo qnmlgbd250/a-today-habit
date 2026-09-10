@@ -170,20 +170,30 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
     }
 
     val weekdayLabels = mapOf(0 to "一", 2 to "三", 4 to "五")
-    // 月份标签：只在“包含 1 号”的那一周列上标注，避免挤在一起（GitHub 同款做法）
+    // 月份标签：只在“包含 1 号”的周列上标注，且标签之间至少间隔 3 列
+    // （否则 "9月" 紧贴 "10月" 会挤在一起；GitHub 同款做法）
     val monthLabels = remember(startMonday) {
-        val labels = MutableList(weekCount) { "" }
+        val candidate = mutableMapOf<Int, String>()
         for (c in 0 until weekCount) {
             val colFirst = startMonday.plusDays((c * 7).toLong())
             for (r in 0 until rows) {
                 val d = colFirst.plusDays(r.toLong())
                 if (d.dayOfMonth == 1) {
-                    labels[c] = "${d.monthValue}月"
+                    candidate[c] = "${d.monthValue}月"
                     break
                 }
             }
         }
-        if (labels[0].isEmpty()) labels[0] = "${startMonday.monthValue}月"
+        if (!candidate.containsKey(0)) candidate[0] = "${startMonday.monthValue}月"
+        val labels = MutableList(weekCount) { "" }
+        var lastKept = -10
+        for (c in 0 until weekCount) {
+            val s = candidate[c] ?: continue
+            if (c - lastKept >= 3) {
+                labels[c] = s
+                lastKept = c
+            }
+        }
         labels
     }
 
@@ -228,11 +238,15 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                             modifier = Modifier.size(width = cell, height = monthH)
                         ) {
                             if (monthLabels[c].isNotEmpty()) {
+                                // 文字宽度放开到 44.dp（可向右溢出到空白列上），否则
+                                // “10月/11月/12月”会被 13.dp 格子截断成“1/11/1”
                                 Text(
                                     monthLabels[c],
                                     style = IOSType.caption,
                                     color = IOSColors.tertiaryLabel,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.width(44.dp)
                                 )
                             }
                         }
