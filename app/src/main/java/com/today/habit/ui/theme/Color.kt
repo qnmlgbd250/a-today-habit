@@ -49,7 +49,7 @@ val IOSTertiaryCardDark = Color(0xFF2C2C2E)
 
 // —— 文字 ——
 val IOSLabelLight = Color(0xFF000000)
-val IOSLabelDark = Color(0xFFFFFFFF)
+val IOSLabelDark = Color(0xFFF2F2F7) // 深色不用纯白：降低白点，夜间不刺眼
 val IOSSecondaryLabelLight = Color(0x993C3C43) // 3C3C43 @60%
 val IOSSecondaryLabelDark = Color(0x99EBEBF5) // EBEBF5 @60%
 val IOSTertiaryLabelLight = Color(0x4D3C3C43) // 3C3C43 @30%
