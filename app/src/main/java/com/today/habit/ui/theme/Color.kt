@@ -147,9 +147,4 @@ object IOSColors {
     val heatEmpty: Color
         @Composable @ReadOnlyComposable get() =
             if (isIOSLightTheme()) IOSHeat0Light else IOSHeat0Dark
-
-    /** 底栏选中指示：浅灰（去廉价感），不跟品牌蓝 */
-    val tabSelect: Color
-        @Composable @ReadOnlyComposable get() =
-            if (isIOSLightTheme()) Color(0xFFE3E3E8) else Color(0xFF3A3A3C)
 }
