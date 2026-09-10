@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,11 +20,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -33,8 +36,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -122,11 +123,10 @@ fun IOSDivider(indent: Dp = 16.dp) {
 // ============================================================
 
 /**
- * iOS 导航栏：居中小标题（17sp semibold）+ 左侧返回 + 右侧动作。
- * [showTitle] 用于大标题页面联动：内容未滚动时隐藏标题只留底色。
- * [elevated] 为 true 时显示卡片底 + hairline（内容已滚动）。
+ * iOS 窄导航栏（48pt 内容 + 状态栏）：居中小标题 + 左侧返回 + 右侧动作。
+ * 底色永远跟页面一致（elevated 时只出一条 hairline，不出现切割色块）。
+ * [showTitle] 用于大标题页面联动：标题淡入淡出。
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IOSNavBar(
     title: String,
@@ -136,49 +136,55 @@ fun IOSNavBar(
     elevated: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
-    Column {
-        TopAppBar(
-            title = {
-                if (showTitle) {
+    val titleAlpha by animateFloatAsState(
+        targetValue = if (showTitle) 1f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "navTitle"
+    )
+    Column(
+        modifier = Modifier
+            .background(IOSColors.background)
+            .statusBarsPadding()
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            if (onBack != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .fillMaxHeight()
+                        .iosPressable(pressedScale = 1f, pressedAlpha = 0.4f, onClick = onBack)
+                        .padding(start = 4.dp, end = 12.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(SFIcons.res("chevron.left")),
+                        contentDescription = backLabel,
+                        tint = IOSColors.blue,
+                        modifier = Modifier.size(17.dp)
+                    )
                     Text(
-                        title,
-                        style = IOSType.headline,
-                        color = IOSColors.label,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        backLabel,
+                        style = IOSType.body,
+                        color = IOSColors.blue,
+                        maxLines = 1
                     )
                 }
-            },
-            navigationIcon = {
-                if (onBack != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .iosPressable(pressedScale = 1f, pressedAlpha = 0.4f, onClick = onBack)
-                            .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(SFIcons.res("chevron.left")),
-                            contentDescription = backLabel,
-                            tint = IOSColors.blue,
-                            modifier = Modifier.size(17.dp)
-                        )
-                        Text(
-                            backLabel,
-                            style = IOSType.body,
-                            color = IOSColors.blue,
-                            maxLines = 1
-                        )
-                    }
-                }
-            },
-            actions = actions,
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = if (elevated) IOSColors.card else IOSColors.background,
-                titleContentColor = IOSColors.label,
-                actionIconContentColor = IOSColors.blue
+            }
+            Text(
+                title,
+                style = IOSType.headline,
+                color = IOSColors.label.copy(alpha = titleAlpha),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.align(Alignment.Center)
             )
-        )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.align(Alignment.CenterEnd),
+                content = actions
+            )
+        }
         if (elevated) {
             Box(
                 modifier = Modifier
@@ -218,7 +224,7 @@ fun IOSLargeTitle(
     subtitle: String? = null,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.padding(top = 4.dp, bottom = 10.dp)) {
+    Column(modifier = modifier.padding(top = 2.dp, bottom = 6.dp)) {
         Text(title, style = IOSType.largeTitle, color = IOSColors.label)
         if (subtitle != null) {
             Spacer(modifier = Modifier.height(2.dp))

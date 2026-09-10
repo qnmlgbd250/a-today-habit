@@ -1,24 +1,30 @@
 package com.today.habit.ui.component
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -29,10 +35,12 @@ import com.kyant.backdrop.effects.vibrancy
 import com.today.habit.ui.theme.IOSColors
 
 private val GlassShape = RoundedCornerShape(30.dp)
+private val IndicatorShape = RoundedCornerShape(19.dp)
 
 /**
- * iOS 26 Liquid Glass 悬浮底栏：液态玻璃（折射 +  vibrancy + 模糊）+
- * 顶部镜面高光 + 选中项柔光底。
+ * iOS 26 Liquid Glass 悬浮底栏（纯图标）：
+ * 液态玻璃（折射 + vibrancy + 模糊）+ 镜面高光 +
+ * 单块选中指示做弹簧滑动（低刚度 + 过冲 = 粘滞果冻感）。
  * 注意：必须位于 NavHost 录制图层之外（MainApp 的 Box 上层），否则自引用闪退。
  */
 @Composable
@@ -48,6 +56,11 @@ fun GlassBottomNavigationBar(
     )
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    // 子页面（非 Tab）时指示器停在上一个 Tab，不乱跳
+    var lastTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    val activeIndex = items.indexOfFirst { it.route == currentRoute }
+    if (activeIndex >= 0) lastTabIndex = activeIndex
+
     val surfaceColor = IOSColors.card
     val haptics = LocalHapticFeedback.current
 
@@ -85,48 +98,66 @@ fun GlassBottomNavigationBar(
                     )
                 )
         )
-        Row(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .height(62.dp)
+                .padding(horizontal = 10.dp)
         ) {
-            items.forEach { item ->
-                val isSelected = currentRoute == item.route
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            if (isSelected) IOSColors.blue.copy(alpha = 0.16f)
-                            else Color.Transparent
-                        )
-                        .iosPressable(pressedScale = 0.9f) {
-                            if (!isSelected) {
-                                haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.startDestinationId)
-                                    launchSingleTop = true
+            // 粘滞滑块：整块滑动 + 弹簧过冲
+            val tabWidth: Dp = maxWidth / 3
+            val slideX by animateDpAsState(
+                targetValue = tabWidth * lastTabIndex,
+                animationSpec = spring(
+                    stiffness = 170f,
+                    dampingRatio = 0.62f
+                ),
+                label = "tabSlide"
+            )
+            Box(
+                modifier = Modifier
+                    .offset(x = slideX)
+                    .width(tabWidth)
+                    .fillMaxHeight()
+                    .padding(horizontal = 4.dp, vertical = 6.dp)
+                    .clip(IndicatorShape)
+                    .background(IOSColors.tabSelect)
+            )
+            Row(modifier = Modifier.fillMaxSize()) {
+                items.forEachIndexed { index, item ->
+                    val isSelected = index == lastTabIndex && activeIndex >= 0
+                    val iconScale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.12f else 1f,
+                        animationSpec = spring(
+                            stiffness = Spring.StiffnessMedium,
+                            dampingRatio = Spring.DampingRatioMediumBouncy
+                        ),
+                        label = "tabIconPop"
+                    )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .iosPressable(pressedScale = 0.85f) {
+                                if (index != lastTabIndex || activeIndex < 0) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.startDestinationId)
+                                        launchSingleTop = true
+                                    }
                                 }
                             }
-                        }
-                        .padding(vertical = 6.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(SFIcons.res(item.iconKey)),
-                        contentDescription = item.title,
-                        tint = if (isSelected) IOSColors.blue else IOSColors.gray,
-                        modifier = Modifier.size(23.dp)
-                    )
-                    Text(
-                        item.title,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isSelected) IOSColors.blue else IOSColors.gray,
-                        maxLines = 1
-                    )
+                    ) {
+                        Icon(
+                            painter = painterResource(SFIcons.res(item.iconKey)),
+                            contentDescription = item.title,
+                            tint = if (isSelected) IOSColors.label else IOSColors.gray,
+                            modifier = Modifier
+                                .size(25.dp)
+                                .graphicsLayer(scaleX = iconScale, scaleY = iconScale)
+                        )
+                    }
                 }
             }
         }

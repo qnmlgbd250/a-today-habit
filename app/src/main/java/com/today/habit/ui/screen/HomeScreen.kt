@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -122,9 +121,9 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 128.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 IOSLargeTitle(title = "今日习惯", subtitle = subtitle)
@@ -187,12 +186,12 @@ private fun TodayOverviewCard(doneCount: Int, totalCount: Int, progress: Float) 
                     )
                 )
             )
-            .padding(18.dp)
+            .padding(16.dp)
     ) {
         IOSProgressRing(
             progress = animatedProgress,
             strokeWidth = 7.dp,
-            modifier = Modifier.size(76.dp)
+            modifier = Modifier.size(68.dp)
         ) {
             Text(
                 "${(animatedProgress * 100).toInt()}%",
@@ -234,7 +233,7 @@ private fun DateStrip(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Un
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier
                     .width(44.dp)
-                    .height(62.dp)
+                    .height(58.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .background(if (isSelected) IOSColors.blue else Color.Transparent)
                     .iosPressable(pressedScale = 0.92f) { onDateSelected(date) }
