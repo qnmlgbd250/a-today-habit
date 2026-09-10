@@ -233,9 +233,12 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
             var viewportPx by remember { mutableIntStateOf(0) }
             var rowRootX by remember { mutableFloatStateOf(0f) }
             var todayRight by remember { mutableFloatStateOf(-1f) }
+            // 只自动定位一次：滑动时今天列的全局坐标会变，若每次都跟就会跟手指打架（屏闪）
+            var autoScrolled by remember { mutableStateOf(false) }
             // 内容量出后定位到今天所在的列（右对齐）；列宽已凑整，左右都是完整列
             LaunchedEffect(scrollState.maxValue, viewportPx, todayRight, rowRootX) {
-                if (scrollState.maxValue > 0 && viewportPx > 0 && todayRight > 0) {
+                if (!autoScrolled && scrollState.maxValue > 0 && viewportPx > 0 && todayRight > 0) {
+                    autoScrolled = true
                     val target = (todayRight - rowRootX - viewportPx).toInt()
                         .coerceIn(0, scrollState.maxValue)
                     scrollState.scrollTo(target)
@@ -278,7 +281,10 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                                         verticalArrangement = Arrangement.spacedBy(gap),
                                         modifier = Modifier.then(
                                             if (c == todayCol) Modifier.onGloballyPositioned {
-                                                todayRight = it.positionInRoot().x + it.size.width.toFloat()
+                                                // 定位完成后不再更新，否则滑动时持续重组+抢滚动=屏闪
+                                                if (!autoScrolled) {
+                                                    todayRight = it.positionInRoot().x + it.size.width.toFloat()
+                                                }
                                             } else Modifier
                                         )
                                     ) {
