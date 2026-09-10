@@ -1,31 +1,39 @@
 package com.today.habit.ui.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.today.habit.ui.theme.IOSColors
-import com.today.habit.ui.theme.IOSType
+
+private val GlassShape = RoundedCornerShape(30.dp)
 
 /**
- * iOS UITabBar：全宽底部毛玻璃 + 顶部分隔线，图标 + 小字标签。
- * 选中蓝色、未选中灰色（iOS 标准配色，无选中底）。
+ * iOS 26 Liquid Glass 悬浮底栏：液态玻璃（折射 +  vibrancy + 模糊）+
+ * 顶部镜面高光 + 选中项柔光底。
+ * 注意：必须位于 NavHost 录制图层之外（MainApp 的 Box 上层），否则自引用闪退。
  */
 @Composable
 fun GlassBottomNavigationBar(
@@ -41,33 +49,46 @@ fun GlassBottomNavigationBar(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val surfaceColor = IOSColors.card
+    val haptics = LocalHapticFeedback.current
 
-    Column(
+    Box(
         modifier = modifier
-            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
             .drawBackdrop(
                 backdrop = backdrop,
-                shape = { RectangleShape },
+                shape = { GlassShape },
                 effects = {
                     vibrancy()
-                    blur(8f.dp.toPx())
+                    blur(6f.dp.toPx())
+                    lens(20f.dp.toPx(), 40f.dp.toPx())
                 },
                 onDrawSurface = {
-                    drawRect(surfaceColor.copy(alpha = 0.82f))
+                    drawRect(surfaceColor.copy(alpha = 0.55f))
                 }
             )
+            .border(0.5.dp, Color.White.copy(alpha = 0.28f), GlassShape)
+            .fillMaxWidth()
     ) {
-        // TabBar 顶部分隔线
+        // 顶部镜面高光：玻璃质感的关键
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(0.5.dp)
-                .background(IOSColors.separator)
+                .matchParentSize()
+                .clip(GlassShape)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.32f),
+                            Color.White.copy(alpha = 0.06f),
+                            Color.Transparent
+                        ),
+                        endY = 120f
+                    )
+                )
         )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp, bottom = 4.dp),
+                .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEach { item ->
@@ -77,23 +98,32 @@ fun GlassBottomNavigationBar(
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .iosPressable(pressedScale = 0.92f) {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.startDestinationId)
-                                launchSingleTop = true
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(
+                            if (isSelected) IOSColors.blue.copy(alpha = 0.16f)
+                            else Color.Transparent
+                        )
+                        .iosPressable(pressedScale = 0.9f) {
+                            if (!isSelected) {
+                                haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.startDestinationId)
+                                    launchSingleTop = true
+                                }
                             }
                         }
-                        .padding(vertical = 2.dp)
+                        .padding(vertical = 6.dp)
                 ) {
                     Icon(
                         painter = painterResource(SFIcons.res(item.iconKey)),
                         contentDescription = item.title,
                         tint = if (isSelected) IOSColors.blue else IOSColors.gray,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(23.dp)
                     )
                     Text(
                         item.title,
-                        style = IOSType.tabLabel,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
                         color = if (isSelected) IOSColors.blue else IOSColors.gray,
                         maxLines = 1
                     )

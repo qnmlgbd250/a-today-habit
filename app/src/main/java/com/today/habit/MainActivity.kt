@@ -149,7 +149,8 @@ fun MainApp(viewModel: HabitViewModel) {
             GlassBottomNavigationBar(
                 navController = navController,
                 backdrop = backdrop,
-                modifier = Modifier.navigationBarsPadding()
+                // 悬浮玻璃栏：手势条内边距 + 底部悬空
+                modifier = Modifier.navigationBarsPadding().padding(bottom = 10.dp)
             )
         }
     }

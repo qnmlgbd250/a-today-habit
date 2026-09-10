@@ -19,6 +19,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.today.habit.ui.component.HabitIcons
+import com.today.habit.ui.component.IOSActionRow
 import com.today.habit.ui.component.IOSChevron
 import com.today.habit.ui.component.IOSDivider
 import com.today.habit.ui.component.IOSGroup
@@ -150,12 +151,12 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(IOSColors.green.copy(alpha = 0.14f))
+                                .background(HabitIcons.colorFor(existing?.id ?: 0L).copy(alpha = 0.14f))
                         ) {
                             Icon(
                                 painter = painterResource(HabitIcons.getRes(icon)),
                                 contentDescription = null,
-                                tint = IOSColors.green,
+                                tint = HabitIcons.colorFor(existing?.id ?: 0L),
                                 modifier = Modifier.size(21.dp)
                             )
                         }
@@ -245,6 +246,18 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
                                 placeholder = "日期，例如：1 15"
                             )
                         }
+                    }
+                }
+            }
+            // 删除入口（仅编辑既有习惯，iOS 通讯录式底部红色行）
+            if (!isNew && existing != null) {
+                item {
+                    IOSGroup {
+                        IOSActionRow(
+                            label = "删除习惯",
+                            color = IOSColors.red,
+                            onClick = { navController.navigate("habit_delete/${existing.id}") }
+                        )
                     }
                 }
             }

@@ -25,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -99,14 +100,17 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                 showTitle = collapsed,
                 elevated = collapsed,
                 actions = {
-                    IconButton(onClick = { navController.navigate("habit_edit/new") }) {
-                        Icon(
-                            painter = painterResource(SFIcons.res("plus")),
-                            contentDescription = "新建习惯",
-                            tint = IOSColors.blue,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(SFIcons.res("plus")),
+                        contentDescription = "新建习惯",
+                        tint = IOSColors.blue,
+                        modifier = Modifier
+                            .iosPressable(pressedScale = 0.8f, pressedAlpha = 0.5f) {
+                                navController.navigate("habit_edit/new")
+                            }
+                            .padding(10.dp)
+                            .size(22.dp)
+                    )
                 }
             )
         },
@@ -118,7 +122,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 128.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
@@ -174,8 +178,15 @@ private fun TodayOverviewCard(doneCount: Int, totalCount: Int, progress: Float) 
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(IOSColors.card)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        IOSColors.card,
+                        IOSColors.green.copy(alpha = 0.08f)
+                    )
+                )
+            )
             .padding(18.dp)
     ) {
         IOSProgressRing(
@@ -224,7 +235,7 @@ private fun DateStrip(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Un
                 modifier = Modifier
                     .width(44.dp)
                     .height(62.dp)
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(18.dp))
                     .background(if (isSelected) IOSColors.blue else Color.Transparent)
                     .iosPressable(pressedScale = 0.92f) { onDateSelected(date) }
                     .padding(vertical = 6.dp)
@@ -294,11 +305,16 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
         animationSpec = tween(durationMillis = 500, easing = LinearOutSlowInEasing),
         label = "habitProgress"
     )
-    // 完成态：绿色实心圆底；未完成：透明底 + 进度环
-    val circleColor by animateColorAsState(
-        targetValue = if (isCompleted) IOSColors.green else Color.Transparent,
+    // 完成态：整个圆融为一体（无灰缝）；未完成：透明底 + 进度环
+    val circleSize by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (isCompleted) 64.dp else 58.dp,
         animationSpec = tween(durationMillis = 300),
-        label = "habitCircle"
+        label = "habitCircleSize"
+    )
+    val iconTint by animateColorAsState(
+        targetValue = if (isCompleted) Color.White else HabitIcons.colorFor(habit.id),
+        animationSpec = tween(durationMillis = 300),
+        label = "habitIconTint"
     )
 
     Column(
@@ -316,25 +332,38 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
             }
             .padding(vertical = 4.dp)
     ) {
-        IOSProgressRing(
-            progress = progress,
-            strokeWidth = 4.dp,
-            modifier = Modifier.size(72.dp)
-        ) {
+        if (isCompleted) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(58.dp)
+                    .size(72.dp)
                     .clip(CircleShape)
-                    .background(circleColor)
+                    .background(IOSColors.green)
             ) {
                 Icon(
                     painter = painterResource(HabitIcons.getRes(habit.icon)),
                     contentDescription = habit.name,
-                    modifier = Modifier.size(28.dp),
-                    tint = if (isCompleted) Color.White
-                        else IOSColors.secondaryLabel
+                    modifier = Modifier.size(circleSize * 0.47f),
+                    tint = iconTint
                 )
+            }
+        } else {
+            IOSProgressRing(
+                progress = progress,
+                strokeWidth = 4.dp,
+                modifier = Modifier.size(72.dp)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(circleSize)
+                ) {
+                    Icon(
+                        painter = painterResource(HabitIcons.getRes(habit.icon)),
+                        contentDescription = habit.name,
+                        modifier = Modifier.size(28.dp),
+                        tint = iconTint
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(7.dp))

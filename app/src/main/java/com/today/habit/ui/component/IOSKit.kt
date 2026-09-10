@@ -49,7 +49,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -202,7 +204,7 @@ fun RowScope.IOSNavAction(
         color = if (enabled) IOSColors.blue else IOSColors.tertiaryLabel,
         modifier = Modifier
             .iosPressable(enabled = enabled, pressedScale = 1f, pressedAlpha = 0.4f, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     )
 }
 
@@ -265,7 +267,7 @@ fun IOSGroup(
                 header,
                 style = IOSType.footnote,
                 color = IOSColors.secondaryLabel,
-                modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 6.dp)
+                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 6.dp)
             )
         }
         Column(
@@ -280,7 +282,7 @@ fun IOSGroup(
                 footer,
                 style = IOSType.footnote,
                 color = IOSColors.secondaryLabel,
-                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp)
+                modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 6.dp)
             )
         }
     }
@@ -407,6 +409,7 @@ fun IOSSwitch(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptics = LocalHapticFeedback.current
     val thumbOffset by animateDpAsState(
         targetValue = if (checked) 20.dp else 0.dp,
         animationSpec = spring(
@@ -424,7 +427,10 @@ fun IOSSwitch(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
-            ) { onCheckedChange(!checked) }
+            ) {
+                haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                onCheckedChange(!checked)
+            }
             .padding(horizontal = 2.dp)
     ) {
         Box(
@@ -470,6 +476,7 @@ fun IOSStepper(
 
 @Composable
 private fun StepperButton(label: String, enabled: Boolean, onClick: () -> Unit) {
+    val haptics = LocalHapticFeedback.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     Box(
@@ -481,7 +488,10 @@ private fun StepperButton(label: String, enabled: Boolean, onClick: () -> Unit) 
                 interactionSource = interaction,
                 indication = null,
                 enabled = enabled,
-                onClick = onClick
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                    onClick()
+                }
             )
     ) {
         Text(

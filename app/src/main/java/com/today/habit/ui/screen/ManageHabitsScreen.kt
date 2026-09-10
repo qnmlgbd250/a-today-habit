@@ -26,7 +26,6 @@ import com.today.habit.ui.component.IOSDivider
 import com.today.habit.ui.component.IOSGroup
 import com.today.habit.ui.component.IOSLargeTitle
 import com.today.habit.ui.component.IOSNavBar
-import com.today.habit.ui.component.SFIcons
 import com.today.habit.ui.component.iosPressable
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
@@ -79,8 +78,7 @@ fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) 
                         habits.forEachIndexed { index, habit ->
                             HabitManageRow(
                                 habit = habit,
-                                onEdit = { navController.navigate("habit_edit/${habit.id}") },
-                                onDelete = { navController.navigate("habit_delete/${habit.id}") }
+                                onEdit = { navController.navigate("habit_edit/${habit.id}") }
                             )
                             if (index < habits.lastIndex) IOSDivider()
                         }
@@ -91,9 +89,9 @@ fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) 
     }
 }
 
-/** iOS 管理行：点整行编辑，尾部红色删除键 */
+/** iOS 管理行：点整行进入编辑（删除入口在编辑页底部，iOS 通讯录式） */
 @Composable
-private fun HabitManageRow(habit: Habit, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun HabitManageRow(habit: Habit, onEdit: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -107,12 +105,12 @@ private fun HabitManageRow(habit: Habit, onEdit: () -> Unit, onDelete: () -> Uni
             modifier = Modifier
                 .size(38.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(IOSColors.green.copy(alpha = 0.14f))
+                .background(HabitIcons.colorFor(habit.id).copy(alpha = 0.14f))
         ) {
             Icon(
                 painter = painterResource(HabitIcons.getRes(habit.icon)),
                 contentDescription = null,
-                tint = IOSColors.green,
+                tint = HabitIcons.colorFor(habit.id),
                 modifier = Modifier.size(21.dp)
             )
         }
@@ -125,15 +123,6 @@ private fun HabitManageRow(habit: Habit, onEdit: () -> Unit, onDelete: () -> Uni
                 color = IOSColors.secondaryLabel
             )
         }
-        Icon(
-            painter = painterResource(SFIcons.res("trash")),
-            contentDescription = "删除",
-            tint = IOSColors.red,
-            modifier = Modifier
-                .size(36.dp)
-                .iosPressable(pressedScale = 1f, pressedAlpha = 0.4f, onClick = onDelete)
-                .padding(8.dp)
-        )
         IOSChevron()
     }
 }

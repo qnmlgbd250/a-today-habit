@@ -91,6 +91,7 @@ private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
     val countsByDate = remember(allCheckIns) {
         allCheckIns.groupBy { it.date }.mapValues { it.value.size }
     }
+    val totalCount = allCheckIns.size
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -121,6 +122,12 @@ private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
         }
         Spacer(modifier = Modifier.height(14.dp))
         HeatmapGrid(countsByDate, onDateClick)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            "过去 15 周 · 累计打卡 $totalCount 次",
+            style = IOSType.footnote,
+            color = IOSColors.secondaryLabel
+        )
     }
 }
 
@@ -225,7 +232,7 @@ private fun HabitStatsCard(habit: Habit, checkIns: List<CheckInRecord>) {
                 painter = painterResource(HabitIcons.getRes(habit.icon)),
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = if (progress >= 1f) IOSColors.green else IOSGrayLight
+                tint = if (progress >= 1f) IOSColors.green else HabitIcons.colorFor(habit.id)
             )
         }
         Spacer(modifier = Modifier.width(14.dp))
