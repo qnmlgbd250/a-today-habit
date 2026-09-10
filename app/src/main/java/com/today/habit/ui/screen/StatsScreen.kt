@@ -26,12 +26,11 @@ import androidx.navigation.NavController
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
-import com.today.habit.ui.component.IOSAmbient
 import com.today.habit.ui.component.IOSLargeTitle
-import com.today.habit.ui.component.IOSNavBar
 import com.today.habit.ui.component.IOSProgressRing
 import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
+import com.today.habit.ui.component.IOSTopScrim
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSHeat1
@@ -54,9 +53,6 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
     val collapsed = rememberIOSCollapsed(listState)
 
     Scaffold(
-        topBar = {
-            IOSNavBar(title = "统计", showTitle = collapsed, elevated = collapsed)
-        },
         containerColor = IOSColors.background
     ) { padding ->
         Box(
@@ -64,7 +60,6 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            IOSAmbient()
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
@@ -96,6 +91,7 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                 }
             }
+            IOSTopScrim(collapsed)
         }
     }
 }

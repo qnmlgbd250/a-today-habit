@@ -23,18 +23,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.today.habit.BuildConfig
-import com.today.habit.ui.component.IOSAmbient
 import com.today.habit.ui.component.IOSChevron
 import com.today.habit.ui.component.IOSDivider
 import com.today.habit.ui.component.IOSGroup
 import com.today.habit.ui.component.IOSLargeTitle
-import com.today.habit.ui.component.IOSNavBar
 import com.today.habit.ui.component.IOSRow
 import com.today.habit.ui.component.IOSSettingsIcon
 import com.today.habit.ui.component.IOSSwitch
 import com.today.habit.ui.component.IOSToast
 import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
+import com.today.habit.ui.component.IOSTopScrim
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSType
@@ -116,9 +115,6 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            topBar = {
-                IOSNavBar(title = "设置", showTitle = collapsed, elevated = collapsed)
-            },
             containerColor = IOSColors.background
         ) { padding ->
             Box(
@@ -126,7 +122,6 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                IOSAmbient()
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
@@ -221,6 +216,7 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                         }
                     }
                 }
+                IOSTopScrim(collapsed)
             }
         }
         IOSToast(toastMessage)

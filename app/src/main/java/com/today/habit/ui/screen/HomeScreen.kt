@@ -41,14 +41,12 @@ import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.CheckInSoundPlayer
 import com.today.habit.ui.component.HabitIcons
-import com.today.habit.ui.component.IOSAmbient
-import com.today.habit.ui.component.IOSLargeTitle
-import com.today.habit.ui.component.IOSNavBar
 import com.today.habit.ui.component.IOSProgressRing
 import com.today.habit.ui.component.SFIcons
 import com.today.habit.ui.component.iosElevatedCard
 import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.iosPressable
+import com.today.habit.ui.component.IOSTopScrim
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSType
@@ -96,26 +94,6 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
         else doneCount.toFloat() / filteredHabits.size.toFloat()
 
     Scaffold(
-        topBar = {
-            IOSNavBar(
-                title = "今日习惯",
-                showTitle = collapsed,
-                elevated = collapsed,
-                actions = {
-                    Icon(
-                        painter = painterResource(SFIcons.res("plus")),
-                        contentDescription = "新建习惯",
-                        tint = IOSColors.blue,
-                        modifier = Modifier
-                            .iosPressable(pressedScale = 0.8f, pressedAlpha = 0.5f) {
-                                navController.navigate("habit_edit/new")
-                            }
-                            .padding(10.dp)
-                            .size(22.dp)
-                    )
-                }
-            )
-        },
         containerColor = IOSColors.background
     ) { padding ->
         Box(
@@ -123,7 +101,6 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            IOSAmbient()
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 state = gridState,
@@ -134,7 +111,28 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Box(modifier = Modifier.iosEntrance("home:title", 0)) {
-                        IOSLargeTitle(title = "今日习惯", subtitle = subtitle)
+                        // 大标题行内嵌新建按钮：零导航栏铬，不占额外高度
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("今日习惯", style = IOSType.largeTitle, color = IOSColors.label)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(subtitle, style = IOSType.subhead, color = IOSColors.secondaryLabel)
+                            }
+                            Icon(
+                                painter = painterResource(SFIcons.res("plus")),
+                                contentDescription = "新建习惯",
+                                tint = IOSColors.blue,
+                                modifier = Modifier
+                                    .iosPressable(pressedScale = 0.8f, pressedAlpha = 0.5f) {
+                                        navController.navigate("habit_edit/new")
+                                    }
+                                    .padding(8.dp)
+                                    .size(24.dp)
+                            )
+                        }
                     }
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
@@ -173,11 +171,12 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
                     }
                 }
             }
+            IOSTopScrim(collapsed)
         }
     }
 }
 
-/** 今日进度总览 hero 卡（淡玻璃 + 环境辉光） */
+/** 今日进度总览 hero 卡 */
 @Composable
 private fun TodayOverviewCard(doneCount: Int, totalCount: Int, progress: Float) {
     val animatedProgress by animateFloatAsState(
@@ -191,7 +190,7 @@ private fun TodayOverviewCard(doneCount: Int, totalCount: Int, progress: Float) 
         else -> "已完成 $doneCount / $totalCount"
     }
     val sub = when {
-        totalCount == 0 -> "点右上角 + 创建第一个习惯"
+        totalCount == 0 -> "点标题旁的 + 创建第一个习惯"
         doneCount == totalCount -> "太棒了，今天的目标都完成了"
         doneCount == 0 -> "还没有打卡，从第一个开始吧"
         else -> "继续加油，还差 ${totalCount - doneCount} 个"

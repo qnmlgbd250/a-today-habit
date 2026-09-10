@@ -14,7 +14,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -51,7 +50,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -221,6 +219,30 @@ fun RowScope.IOSNavAction(
         modifier = Modifier
             .iosPressable(enabled = enabled, pressedScale = 1f, pressedAlpha = 0.4f, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp)
+    )
+}
+
+/**
+ * 顶部滚动保护罩：Tab 首页无导航栏时，内容滚过状态栏区的同底色渐隐保护。
+ * 渐变过渡（无切割线），只在折叠时淡入；平时完全透明不占视觉。
+ */
+@Composable
+fun BoxScope.IOSTopScrim(visible: Boolean) {
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(durationMillis = 250),
+        label = "topScrim"
+    )
+    Box(
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .height(14.dp)
+            .graphicsLayer(alpha = alpha)
+            .background(
+                Brush.verticalGradient(listOf(IOSColors.background, Color.Transparent))
+            )
     )
 }
 
@@ -731,26 +753,7 @@ fun IOSGlyphTile(
     }
 }
 
-/** 页面顶部环境微光（内容层之后的第一层，极淡品牌辉光） */
-@Composable
-fun IOSAmbient(modifier: Modifier = Modifier) {
-    val density = LocalDensity.current
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val glow = IOSColors.green
-        val wPx = with(density) { maxWidth.toPx() }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(glow.copy(alpha = 0.09f), Color.Transparent),
-                        center = Offset(wPx / 2f, 0f),
-                        radius = wPx * 1.05f
-                    )
-                )
-        )
-    }
-}
+/** 页面顶部环境微光——已删除：真机上会显形成顶部色块，造成割裂感。surfaces 保持中性，品牌色只出现在语义元素（进度/完成/选中）上。 */
 
 // ============================================================
 // 入场编排：首见淡入上浮（每 key 终身一次，切 Tab 不重播）
