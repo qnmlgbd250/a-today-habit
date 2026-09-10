@@ -4,13 +4,16 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -133,7 +136,7 @@ private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
         HeatmapGrid(countsByDate, onDateClick)
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            "过去 15 周 · 累计打卡 $totalCount 次",
+            "过去 1 年 · 累计打卡 $totalCount 次 · 左右滑动查看全年",
             style = IOSType.footnote,
             color = IOSColors.tertiaryLabel
         )
@@ -141,20 +144,48 @@ private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
 }
 
 /**
- * 星期对齐的热力图：列=周（周一起），左侧标注一/三/五。
+ * GitHub 风格热力图：列=周（周一起），共 53 列覆盖过去一年，可横滑查看。
+ * 顶部为月份标签，左侧标注一/三/五。初次进入自动滚到最右侧（最近）。
  * 长按格子显示该日数据，点击跳转到首页对应日期。
  */
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -> Unit) {
     val today = remember { LocalDate.now() }
-    val cols = 15
     val rows = 7
-    // 尾端对齐今天：今天固定在最后一列与其星期对应的行，未来格留空
-    val todaySlot = remember(today) { (cols - 1) * rows + (today.dayOfWeek.value - 1) }
+    val weekCount = 53
+    val cell = 13.dp
+    val gap = 4.dp
+    val monthH = 16.dp
+    // 本周一 → 往前 52 周，共 53 列，尾端对齐今天
+    val startMonday = remember(today) {
+        val thisMonday = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        thisMonday.minusWeeks((weekCount - 1).toLong())
+    }
     var hintDate by remember { mutableStateOf<LocalDate?>(null) }
+    val scrollState = rememberScrollState()
+    // 内容量出后自动滚到最右（最近一周）
+    LaunchedEffect(scrollState.maxValue) {
+        if (scrollState.maxValue > 0) scrollState.scrollTo(scrollState.maxValue)
+    }
 
     val weekdayLabels = mapOf(0 to "一", 2 to "三", 4 to "五")
+    // 月份标签：只在“包含 1 号”的那一周列上标注，避免挤在一起（GitHub 同款做法）
+    val monthLabels = remember(startMonday) {
+        val labels = MutableList(weekCount) { "" }
+        for (c in 0 until weekCount) {
+            val colFirst = startMonday.plusDays((c * 7).toLong())
+            for (r in 0 until rows) {
+                val d = colFirst.plusDays(r.toLong())
+                if (d.dayOfMonth == 1) {
+                    labels[c] = "${d.monthValue}月"
+                    break
+                }
+            }
+        }
+        if (labels[0].isEmpty()) labels[0] = "${startMonday.monthValue}月"
+        labels
+    }
 
     Column {
         if (hintDate != null) {
@@ -166,49 +197,77 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
             )
         }
         Row(modifier = Modifier.fillMaxWidth()) {
-            // 左侧星期标签
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                for (r in 0 until rows) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(width = 14.dp, height = 13.dp)
-                    ) {
-                        weekdayLabels[r]?.let {
-                            Text(it, style = IOSType.caption, color = IOSColors.tertiaryLabel)
+            // 左侧星期标签（顶部留出月份栏高度以对齐）
+            Column {
+                Spacer(modifier = Modifier.height(monthH + gap))
+                Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                    for (r in 0 until rows) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(width = 14.dp, height = cell)
+                        ) {
+                            weekdayLabels[r]?.let {
+                                Text(it, style = IOSType.caption, color = IOSColors.tertiaryLabel)
+                            }
                         }
                     }
                 }
             }
             Spacer(modifier = Modifier.width(6.dp))
-            // 15 周网格
+            // 右侧：月份 + 53 周网格，横滑查看全年
             Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(scrollState),
+                horizontalArrangement = Arrangement.spacedBy(gap)
             ) {
-                for (c in 0 until cols) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        for (r in 0 until rows) {
-                            val slot = c * rows + r
-                            if (slot <= todaySlot) {
-                                val date = today.minusDays((todaySlot - slot).toLong())
-                                val count = countsByDate[date.toString()] ?: 0
-                                Box(
-                                    modifier = Modifier
-                                        .size(13.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(heatmapColor(count))
-                                        .combinedClickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null,
-                                            onClick = {
-                                                hintDate = null
-                                                onDateClick(date)
-                                            },
-                                            onLongClick = { hintDate = date }
-                                        )
+                for (c in 0 until weekCount) {
+                    Column {
+                        Box(
+                            contentAlignment = Alignment.CenterStart,
+                            modifier = Modifier.size(width = cell, height = monthH)
+                        ) {
+                            if (monthLabels[c].isNotEmpty()) {
+                                Text(
+                                    monthLabels[c],
+                                    style = IOSType.caption,
+                                    color = IOSColors.tertiaryLabel,
+                                    maxLines = 1
                                 )
-                            } else {
-                                Spacer(modifier = Modifier.size(13.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(gap))
+                        Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                            for (r in 0 until rows) {
+                                val date = startMonday.plusDays((c * 7 + r).toLong())
+                                if (!date.isAfter(today)) {
+                                    val count = countsByDate[date.toString()] ?: 0
+                                    val selected = date == hintDate
+                                    Box(
+                                        modifier = Modifier
+                                            .size(cell)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(heatmapColor(count))
+                                            .then(
+                                                if (selected) Modifier.border(
+                                                    1.dp,
+                                                    IOSColors.label,
+                                                    RoundedCornerShape(4.dp)
+                                                ) else Modifier
+                                            )
+                                            .combinedClickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                                onClick = {
+                                                    hintDate = null
+                                                    onDateClick(date)
+                                                },
+                                                onLongClick = { hintDate = date }
+                                            )
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.size(cell))
+                                }
                             }
                         }
                     }
