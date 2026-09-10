@@ -2,9 +2,7 @@ package com.today.habit.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,17 +14,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.IOSActionRow
 import com.today.habit.ui.component.IOSGroup
+import com.today.habit.ui.component.IOSGlyphTile
 import com.today.habit.ui.component.IOSNavBar
-import com.today.habit.ui.component.SFIcons
 import com.today.habit.ui.component.iosPressable
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSType
@@ -71,20 +67,13 @@ fun DeleteHabitScreen(navController: NavController, viewModel: HabitViewModel, h
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(72.dp)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(IOSColors.red.copy(alpha = 0.12f))
-                    ) {
-                        Icon(
-                            painter = painterResource(HabitIcons.getRes(habit.icon)),
-                            contentDescription = null,
-                            tint = IOSColors.red,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
+                    IOSGlyphTile(
+                        iconKey = HabitIcons.resKey(habit.icon),
+                        tint = IOSColors.red,
+                        size = 72.dp,
+                        radius = 18.dp,
+                        glyphSize = 36.dp
+                    )
                     Text(
                         "删除「${habit.name}」？",
                         style = IOSType.title2,

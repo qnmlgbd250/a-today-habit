@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.luminance
 /** 当前是否为浅色主题（用背景亮度判定，跟随 App 主题切换） */
 @Composable
 @ReadOnlyComposable
-private fun isIOSLightTheme(): Boolean =
+fun isIOSLightTheme(): Boolean =
     MaterialTheme.colorScheme.background.luminance() > 0.5f
 
 // ============================================================

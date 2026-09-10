@@ -148,4 +148,12 @@ object IOSType {
         lineHeight = 12.sp,
         letterSpacing = 0.sp
     )
+    /** 大数字（连续天数、统计强调） */
+    val display = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Bold,
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
+        letterSpacing = 0.sp
+    )
 }

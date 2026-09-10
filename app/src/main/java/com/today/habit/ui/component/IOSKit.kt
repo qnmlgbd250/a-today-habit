@@ -1,5 +1,6 @@
 package com.today.habit.ui.component
 
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,6 +14,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -37,16 +40,22 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -62,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSType
+import com.today.habit.ui.theme.isIOSLightTheme
 
 // ============================================================
 // 基础交互：iOS 按压反馈（缩放 / 透明度，无水波纹）
@@ -271,7 +281,7 @@ fun IOSGroup(
         if (header != null) {
             Text(
                 header,
-                style = IOSType.footnote,
+                style = IOSType.footnote.copy(letterSpacing = 0.6.sp),
                 color = IOSColors.secondaryLabel,
                 modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 6.dp)
             )
@@ -279,8 +289,7 @@ fun IOSGroup(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(IOSColors.card),
+                .iosElevatedCard(12.dp),
             content = content
         )
         if (footer != null) {
@@ -312,7 +321,7 @@ fun IOSRow(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(IOSColors.card)
+            // 行底透明，透出分组卡的渐变与高光
             .then(
                 if (onClick != null) {
                     Modifier.clickable(
@@ -359,15 +368,23 @@ fun IOSChevron() {
     )
 }
 
-/** iOS 设置风彩色圆角图标（29pt） */
+/** iOS 设置风珠宝渐变角标（29pt，同色系亮→ base →暗） */
 @Composable
-fun IOSSettingsIcon(iconKey: String, background: Color) {
+fun IOSSettingsIcon(iconKey: String, tint: Color) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(29.dp)
             .clip(RoundedCornerShape(7.dp))
-            .background(background)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        lerp(tint, Color.White, 0.14f),
+                        tint,
+                        lerp(tint, Color.Black, 0.14f)
+                    )
+                )
+            )
     ) {
         Icon(
             painter = painterResource(SFIcons.res(iconKey)),
@@ -658,11 +675,119 @@ fun IOSActionRow(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .fillMaxWidth()
-            .background(IOSColors.card)
             .iosPressable(onClick = onClick)
             .padding(vertical = 13.dp)
             .defaultMinSize(minHeight = 22.dp)
     ) {
         Text(label, style = IOSType.body, color = color)
     }
+}
+
+// ============================================================
+// 高级材质：柔阴影 + 顶部高光卡片
+// ============================================================
+
+/** 静奢卡片：柔阴影 + 顶部高光渐变（替代纯色平板） */
+@Composable
+fun Modifier.iosElevatedCard(radius: Dp = 16.dp): Modifier {
+    val card = IOSColors.card
+    val light = isIOSLightTheme()
+    val highlight = lerp(card, Color.White, if (light) 0.06f else 0.10f)
+    val shadowCol = if (light) Color(0x14000000) else Color(0x66000000)
+    return this
+        .shadow(16.dp, RoundedCornerShape(radius), spotColor = shadowCol, ambientColor = shadowCol)
+        .clip(RoundedCornerShape(radius))
+        .background(
+            Brush.verticalGradient(0.0f to highlight, 0.28f to card, 1.0f to card)
+        )
+}
+
+/** 通用字形角标：淡 tint 渐变底 + 字形（习惯用墨色） */
+@Composable
+fun IOSGlyphTile(
+    iconKey: String,
+    tint: Color,
+    size: Dp = 38.dp,
+    radius: Dp = 10.dp,
+    glyphSize: Dp = 21.dp
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(radius))
+            .background(
+                Brush.verticalGradient(
+                    listOf(tint.copy(alpha = 0.15f), tint.copy(alpha = 0.06f))
+                )
+            )
+    ) {
+        Icon(
+            painter = painterResource(SFIcons.res(iconKey)),
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(glyphSize)
+        )
+    }
+}
+
+/** 页面顶部环境微光（内容层之后的第一层，极淡品牌辉光） */
+@Composable
+fun IOSAmbient(modifier: Modifier = Modifier) {
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val glow = IOSColors.green
+        val wPx = with(density) { maxWidth.toPx() }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(glow.copy(alpha = 0.09f), Color.Transparent),
+                        center = Offset(wPx / 2f, 0f),
+                        radius = wPx * 1.05f
+                    )
+                )
+        )
+    }
+}
+
+// ============================================================
+// 入场编排：首见淡入上浮（每 key 终身一次，切 Tab 不重播）
+// ============================================================
+
+private object EntranceGate {
+    private const val MAX_KEYS = 500
+    private val seen = LinkedHashSet<String>()
+    /** 已见过返回 true；首见登记并返回 false */
+    fun check(key: String): Boolean {
+        if (seen.contains(key)) return true
+        if (seen.size >= MAX_KEYS) seen.clear()
+        seen.add(key)
+        return false
+    }
+}
+
+private val EnterEasing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
+
+/** 列表入场：淡入 + 上浮，首见播放一次 */
+fun Modifier.iosEntrance(key: String, index: Int, stepMs: Int = 45, baseMs: Int = 70): Modifier = composed {
+    val seen = remember(key) { EntranceGate.check(key) }
+    var started by remember(key) { mutableStateOf(seen) }
+    LaunchedEffect(key) { if (!seen) started = true }
+    val delay = if (seen) 0 else baseMs + index * stepMs
+    val alpha by animateFloatAsState(
+        targetValue = if (started) 1f else 0f,
+        animationSpec = tween(durationMillis = 380, delayMillis = delay, easing = EnterEasing),
+        label = "enterAlpha"
+    )
+    val rise by animateDpAsState(
+        targetValue = if (started) 0.dp else 16.dp,
+        animationSpec = tween(durationMillis = 430, delayMillis = delay, easing = EnterEasing),
+        label = "enterRise"
+    )
+    this.graphicsLayer(
+        alpha = alpha,
+        translationY = with(LocalDensity.current) { rise.toPx() }
+    )
 }

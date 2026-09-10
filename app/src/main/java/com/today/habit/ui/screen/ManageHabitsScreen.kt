@@ -1,13 +1,10 @@
 package com.today.habit.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,17 +12,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.IOSChevron
 import com.today.habit.ui.component.IOSDivider
+import com.today.habit.ui.component.IOSGlyphTile
 import com.today.habit.ui.component.IOSGroup
 import com.today.habit.ui.component.IOSLargeTitle
 import com.today.habit.ui.component.IOSNavBar
+import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.iosPressable
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
@@ -59,7 +56,9 @@ fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) 
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
-                IOSLargeTitle(title = "管理习惯", subtitle = "${habits.size} 个习惯")
+                Box(modifier = Modifier.iosEntrance("manage:title", 0)) {
+                    IOSLargeTitle(title = "管理习惯", subtitle = "${habits.size} 个习惯")
+                }
             }
             if (habits.isEmpty()) {
                 item {
@@ -74,13 +73,15 @@ fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) 
                 }
             } else {
                 item {
-                    IOSGroup {
-                        habits.forEachIndexed { index, habit ->
-                            HabitManageRow(
-                                habit = habit,
-                                onEdit = { navController.navigate("habit_edit/${habit.id}") }
-                            )
-                            if (index < habits.lastIndex) IOSDivider()
+                    Box(modifier = Modifier.iosEntrance("manage:list", 1)) {
+                        IOSGroup {
+                            habits.forEachIndexed { index, habit ->
+                                HabitManageRow(
+                                    habit = habit,
+                                    onEdit = { navController.navigate("habit_edit/${habit.id}") }
+                                )
+                                if (index < habits.lastIndex) IOSDivider()
+                            }
                         }
                     }
                 }
@@ -96,24 +97,10 @@ private fun HabitManageRow(habit: Habit, onEdit: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .background(IOSColors.card)
             .iosPressable(onClick = onEdit)
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(HabitIcons.colorFor(habit.id).copy(alpha = 0.14f))
-        ) {
-            Icon(
-                painter = painterResource(HabitIcons.getRes(habit.icon)),
-                contentDescription = null,
-                tint = HabitIcons.colorFor(habit.id),
-                modifier = Modifier.size(21.dp)
-            )
-        }
+        IOSGlyphTile(HabitIcons.resKey(habit.icon), IOSColors.label)
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(habit.name, style = IOSType.body, color = IOSColors.label, maxLines = 1)

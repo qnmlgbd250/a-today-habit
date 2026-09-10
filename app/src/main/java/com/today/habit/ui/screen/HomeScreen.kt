@@ -2,6 +2,7 @@ package com.today.habit.ui.screen
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -24,7 +25,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -41,10 +41,13 @@ import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.CheckInSoundPlayer
 import com.today.habit.ui.component.HabitIcons
+import com.today.habit.ui.component.IOSAmbient
 import com.today.habit.ui.component.IOSLargeTitle
 import com.today.habit.ui.component.IOSNavBar
 import com.today.habit.ui.component.IOSProgressRing
 import com.today.habit.ui.component.SFIcons
+import com.today.habit.ui.component.iosElevatedCard
+import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.iosPressable
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
@@ -115,38 +118,58 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
         },
         containerColor = IOSColors.background
     ) { padding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            state = gridState,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(padding)
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                IOSLargeTitle(title = "今日习惯", subtitle = subtitle)
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                TodayOverviewCard(
-                    doneCount = doneCount,
-                    totalCount = filteredHabits.size,
-                    progress = overallProgress
-                )
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                DateStrip(selectedDate) { viewModel.setSelectedDate(it) }
-            }
-            if (filteredHabits.isEmpty()) {
+            IOSAmbient()
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                state = gridState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    HomeEmptyState { navController.navigate("habit_edit/new") }
+                    Box(modifier = Modifier.iosEntrance("home:title", 0)) {
+                        IOSLargeTitle(title = "今日习惯", subtitle = subtitle)
+                    }
                 }
-            } else {
-                items(filteredHabits, key = { it.id }) { habit ->
-                    val checkIn = recordByHabit[habit.id]
-                    HabitGridItem(habit, checkIn) {
-                        viewModel.toggleCheckIn(habit.id, selectedDate.toString(), habit.targetCount)
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(modifier = Modifier.iosEntrance("home:hero", 1)) {
+                        TodayOverviewCard(
+                            doneCount = doneCount,
+                            totalCount = filteredHabits.size,
+                            progress = overallProgress
+                        )
+                    }
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(modifier = Modifier.iosEntrance("home:dates", 2)) {
+                        DateStrip(selectedDate) { viewModel.setSelectedDate(it) }
+                    }
+                }
+                if (filteredHabits.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(modifier = Modifier.iosEntrance("home:empty", 3)) {
+                            HomeEmptyState { navController.navigate("habit_edit/new") }
+                        }
+                    }
+                } else {
+                    items(filteredHabits, key = { it.id }) { habit ->
+                        Box(
+                            modifier = Modifier.iosEntrance(
+                                key = "home:${habit.id}",
+                                index = 3 + filteredHabits.indexOf(habit).coerceAtMost(8)
+                            )
+                        ) {
+                            val checkIn = recordByHabit[habit.id]
+                            HabitGridItem(habit, checkIn) {
+                                viewModel.toggleCheckIn(habit.id, selectedDate.toString(), habit.targetCount)
+                            }
+                        }
                     }
                 }
             }
@@ -154,7 +177,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
     }
 }
 
-/** 今日进度总览卡（健康 App 风） */
+/** 今日进度总览 hero 卡（淡玻璃 + 环境辉光） */
 @Composable
 private fun TodayOverviewCard(doneCount: Int, totalCount: Int, progress: Float) {
     val animatedProgress by animateFloatAsState(
@@ -177,21 +200,13 @@ private fun TodayOverviewCard(doneCount: Int, totalCount: Int, progress: Float) 
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        IOSColors.card,
-                        IOSColors.green.copy(alpha = 0.08f)
-                    )
-                )
-            )
-            .padding(16.dp)
+            .iosElevatedCard(18.dp)
+            .padding(18.dp)
     ) {
         IOSProgressRing(
             progress = animatedProgress,
-            strokeWidth = 7.dp,
-            modifier = Modifier.size(68.dp)
+            strokeWidth = 8.dp,
+            modifier = Modifier.size(84.dp)
         ) {
             Text(
                 "${(animatedProgress * 100).toInt()}%",
@@ -269,25 +284,41 @@ private fun DateStrip(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Un
     }
 }
 
-/** iOS 空态：大灰图标 + 两行说明 */
+/** 空态：同心圆 + 新建隐喻 + 两行文案 */
 @Composable
 private fun HomeEmptyState(onCreate: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 48.dp)
+            .padding(top = 40.dp)
             .iosPressable(onClick = onCreate)
     ) {
-        Icon(
-            painter = painterResource(SFIcons.res("checkmark")),
-            contentDescription = null,
-            tint = IOSColors.track,
-            modifier = Modifier.size(64.dp)
-        )
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(116.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(116.dp)
+                    .clip(CircleShape)
+                    .background(IOSColors.tertiaryCard)
+            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(84.dp)
+                    .clip(CircleShape)
+                    .background(IOSColors.card)
+            ) {
+                Icon(
+                    painter = painterResource(SFIcons.res("plus")),
+                    contentDescription = null,
+                    tint = IOSColors.blue,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
         Text("这一天没有习惯", style = IOSType.headline, color = IOSColors.secondaryLabel)
-        Text("点右上角 + 新建第一个习惯", style = IOSType.subhead, color = IOSColors.tertiaryLabel)
+        Text("点按这里新建第一个习惯", style = IOSType.subhead, color = IOSColors.tertiaryLabel)
     }
 }
 
@@ -304,14 +335,14 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
         animationSpec = tween(durationMillis = 500, easing = LinearOutSlowInEasing),
         label = "habitProgress"
     )
-    // 完成态：整个圆融为一体（无灰缝）；未完成：透明底 + 进度环
-    val circleSize by androidx.compose.animation.core.animateDpAsState(
-        targetValue = if (isCompleted) 64.dp else 58.dp,
+    // 完成态整圆融为一体；未完成墨色字形 + 进度环
+    val circleSize by animateDpAsState(
+        targetValue = if (isCompleted) 68.dp else 62.dp,
         animationSpec = tween(durationMillis = 300),
         label = "habitCircleSize"
     )
     val iconTint by animateColorAsState(
-        targetValue = if (isCompleted) Color.White else HabitIcons.colorFor(habit.id),
+        targetValue = if (isCompleted) Color.White else IOSColors.secondaryLabel,
         animationSpec = tween(durationMillis = 300),
         label = "habitIconTint"
     )
@@ -321,7 +352,6 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
         modifier = Modifier
             .fillMaxWidth()
             .iosPressable {
-                // iOS 触觉：达成时重触，其余轻触
                 haptics.performHapticFeedback(
                     if (!isCompleted) HapticFeedbackType.LongPress
                     else HapticFeedbackType.VirtualKey
@@ -335,7 +365,7 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(72.dp)
+                    .size(76.dp)
                     .clip(CircleShape)
                     .background(IOSColors.green)
             ) {
@@ -350,7 +380,7 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
             IOSProgressRing(
                 progress = progress,
                 strokeWidth = 4.dp,
-                modifier = Modifier.size(72.dp)
+                modifier = Modifier.size(76.dp)
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -359,7 +389,7 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
                     Icon(
                         painter = painterResource(HabitIcons.getRes(habit.icon)),
                         contentDescription = habit.name,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(30.dp),
                         tint = iconTint
                     )
                 }
@@ -376,6 +406,7 @@ fun HabitGridItem(habit: Habit, checkInRecord: CheckInRecord?, onClick: () -> Un
         Text(
             text = "$currentCount/$targetCount",
             style = IOSType.caption,
+            fontWeight = if (isCompleted) FontWeight.SemiBold else FontWeight.Normal,
             color = if (isCompleted) IOSColors.green else IOSColors.tertiaryLabel
         )
     }

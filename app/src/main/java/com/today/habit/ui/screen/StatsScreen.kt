@@ -3,7 +3,6 @@ package com.today.habit.ui.screen
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,15 +21,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
+import com.today.habit.ui.component.IOSAmbient
 import com.today.habit.ui.component.IOSLargeTitle
 import com.today.habit.ui.component.IOSNavBar
 import com.today.habit.ui.component.IOSProgressRing
+import com.today.habit.ui.component.iosElevatedCard
+import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSHeat1
@@ -38,7 +39,6 @@ import com.today.habit.ui.theme.IOSHeat2
 import com.today.habit.ui.theme.IOSHeat3
 import com.today.habit.ui.theme.IOSHeat4
 import com.today.habit.ui.theme.IOSHeat5
-import com.today.habit.ui.theme.IOSGrayLight
 import com.today.habit.ui.theme.IOSType
 import com.today.habit.ui.viewmodel.HabitViewModel
 import java.time.LocalDate
@@ -59,28 +59,42 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
         },
         containerColor = IOSColors.background
     ) { padding ->
-        LazyColumn(
-            state = listState,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(padding)
         ) {
-            item {
-                IOSLargeTitle(title = "统计")
-            }
-            // 热力图卡
-            item {
-                HeatmapCard(allCheckIns) { date ->
-                    viewModel.setSelectedDate(date)
-                    navController.navigate("home")
+            IOSAmbient()
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 120.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Box(modifier = Modifier.iosEntrance("stats:title", 0)) {
+                        IOSLargeTitle(title = "统计")
+                    }
                 }
-            }
-            // 习惯回顾
-            items(habits, key = { it.id }) { habit ->
-                val habitCheckIns by viewModel.getCheckInsByHabitId(habit.id).collectAsState(emptyList())
-                HabitStatsCard(habit, habitCheckIns)
+                item {
+                    Box(modifier = Modifier.iosEntrance("stats:heat", 1)) {
+                        HeatmapCard(allCheckIns) { date ->
+                            viewModel.setSelectedDate(date)
+                            navController.navigate("home")
+                        }
+                    }
+                }
+                items(habits, key = { it.id }) { habit ->
+                    Box(
+                        modifier = Modifier.iosEntrance(
+                            key = "stats:${habit.id}",
+                            index = 2 + habits.indexOf(habit).coerceAtMost(8)
+                        )
+                    ) {
+                        val habitCheckIns by viewModel.getCheckInsByHabitId(habit.id).collectAsState(emptyList())
+                        HabitStatsCard(habit, habitCheckIns)
+                    }
+                }
             }
         }
     }
@@ -95,8 +109,7 @@ private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(IOSColors.card)
+            .iosElevatedCard(16.dp)
             .padding(16.dp)
     ) {
         Row(
@@ -126,22 +139,26 @@ private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
         Text(
             "过去 15 周 · 累计打卡 $totalCount 次",
             style = IOSType.footnote,
-            color = IOSColors.secondaryLabel
+            color = IOSColors.tertiaryLabel
         )
     }
 }
 
+/**
+ * 星期对齐的热力图：列=周（周一起），左侧标注一/三/五。
+ * 长按格子显示该日数据，点击跳转到首页对应日期。
+ */
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate) -> Unit) {
     val today = remember { LocalDate.now() }
-    val totalDays = 105
-    val dates = remember(today) {
-        (0 until totalDays).map { today.minusDays(it.toLong()) }.reversed()
-    }
+    val cols = 15
     val rows = 7
-    val cols = totalDays / rows
+    // 尾端对齐今天：今天固定在最后一列与其星期对应的行，未来格留空
+    val todaySlot = remember(today) { (cols - 1) * rows + (today.dayOfWeek.value - 1) }
     var hintDate by remember { mutableStateOf<LocalDate?>(null) }
+
+    val weekdayLabels = mapOf(0 to "一", 2 to "三", 4 to "五")
 
     Column {
         if (hintDate != null) {
@@ -152,32 +169,51 @@ private fun HeatmapGrid(countsByDate: Map<String, Int>, onDateClick: (LocalDate)
                 modifier = Modifier.padding(bottom = 6.dp)
             )
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            for (c in 0 until cols) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    for (r in 0 until rows) {
-                        val index = c * rows + r
-                        if (index < dates.size) {
-                            val date = dates[index]
-                            val count = countsByDate[date.toString()] ?: 0
-                            Box(
-                                modifier = Modifier
-                                    .size(13.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(heatmapColor(count))
-                                    .combinedClickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null,
-                                        onClick = {
-                                            hintDate = null
-                                            onDateClick(date)
-                                        },
-                                        onLongClick = { hintDate = date }
-                                    )
-                            )
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // 左侧星期标签
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                for (r in 0 until rows) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(width = 14.dp, height = 13.dp)
+                    ) {
+                        weekdayLabels[r]?.let {
+                            Text(it, style = IOSType.caption, color = IOSColors.tertiaryLabel)
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.width(6.dp))
+            // 15 周网格
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                for (c in 0 until cols) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        for (r in 0 until rows) {
+                            val slot = c * rows + r
+                            if (slot <= todaySlot) {
+                                val date = today.minusDays((todaySlot - slot).toLong())
+                                val count = countsByDate[date.toString()] ?: 0
+                                Box(
+                                    modifier = Modifier
+                                        .size(13.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(heatmapColor(count))
+                                        .combinedClickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                            onClick = {
+                                                hintDate = null
+                                                onDateClick(date)
+                                            },
+                                            onLongClick = { hintDate = date }
+                                        )
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.size(13.dp))
+                            }
                         }
                     }
                 }
@@ -219,20 +255,19 @@ private fun HabitStatsCard(habit: Habit, checkIns: List<CheckInRecord>) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(IOSColors.card)
+            .iosElevatedCard(16.dp)
             .padding(16.dp)
     ) {
         IOSProgressRing(
             progress = progress,
             strokeWidth = 4.dp,
-            modifier = Modifier.size(54.dp)
+            modifier = Modifier.size(56.dp)
         ) {
             Icon(
                 painter = painterResource(HabitIcons.getRes(habit.icon)),
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = if (progress >= 1f) IOSColors.green else HabitIcons.colorFor(habit.id)
+                modifier = Modifier.size(25.dp),
+                tint = if (progress >= 1f) IOSColors.green else IOSColors.secondaryLabel
             )
         }
         Spacer(modifier = Modifier.width(14.dp))
@@ -240,21 +275,20 @@ private fun HabitStatsCard(habit: Habit, checkIns: List<CheckInRecord>) {
             Text(habit.name, style = IOSType.headline, color = IOSColors.label, maxLines = 1)
             Text(
                 "累计打卡 $totalCount 次",
-                style = IOSType.subhead,
-                color = IOSColors.secondaryLabel
+                style = IOSType.footnote,
+                color = IOSColors.tertiaryLabel
             )
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 "$streak",
-                style = IOSType.title1,
-                fontWeight = FontWeight.Bold,
+                style = IOSType.display,
                 color = IOSColors.label
             )
             Text(
                 "连续${when (habit.frequency) { "WEEKLY" -> "周"; "MONTHLY" -> "月"; else -> "天" }}",
                 style = IOSType.caption,
-                color = IOSColors.secondaryLabel
+                color = IOSColors.tertiaryLabel
             )
         }
     }

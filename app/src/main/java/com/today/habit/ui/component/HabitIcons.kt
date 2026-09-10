@@ -1,6 +1,5 @@
 package com.today.habit.ui.component
 
-import androidx.compose.ui.graphics.Color
 import com.today.habit.R
 
 object HabitIcons {
@@ -45,21 +44,4 @@ object HabitIcons {
         if (LegacyDrawables.containsKey(name)) return name
         return LegacyMap[name] ?: name
     }
-
-    /**
-     * iOS 提醒事项风代表色：每个习惯按 id 取一个固定颜色，
-     * 用于图标角标等点缀（完成态仍统一用主题绿，避免语义混乱）。
-     */
-    private val Palette = listOf(
-        Color(0xFF007AFF),
-        Color(0xFF34C759),
-        Color(0xFFFF9500),
-        Color(0xFFFF3B30),
-        Color(0xFFAF52DE),
-        Color(0xFF5AC8FA),
-        Color(0xFFFF2D55)
-    )
-
-    fun colorFor(id: Long): Color =
-        Palette[Math.floorMod(id, Palette.size.toLong()).toInt()]
 }

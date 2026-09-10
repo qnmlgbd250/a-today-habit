@@ -22,6 +22,7 @@ import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.IOSActionRow
 import com.today.habit.ui.component.IOSChevron
 import com.today.habit.ui.component.IOSDivider
+import com.today.habit.ui.component.IOSGlyphTile
 import com.today.habit.ui.component.IOSGroup
 import com.today.habit.ui.component.IOSInlineTextField
 import com.today.habit.ui.component.IOSLargeTitle
@@ -32,6 +33,8 @@ import com.today.habit.ui.component.IOSSegmentedControl
 import com.today.habit.ui.component.IOSStepper
 import com.today.habit.ui.component.IOSWeekdayPicker
 import com.today.habit.ui.component.SFIcons
+import com.today.habit.ui.component.iosElevatedCard
+import com.today.habit.ui.component.iosEntrance
 import com.today.habit.ui.component.iosPressable
 import com.today.habit.ui.component.rememberIOSCollapsed
 import com.today.habit.ui.theme.IOSColors
@@ -129,37 +132,27 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                IOSLargeTitle(title = title)
+                Box(modifier = Modifier.iosEntrance("edit:title", 0)) {
+                    IOSLargeTitle(title = title)
+                }
             }
             // 内容组
             item {
+                Box(modifier = Modifier.iosEntrance("edit:content", 1)) {
                 IOSGroup {
                     // 图标行
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(IOSColors.card)
+                            .iosElevatedCard(16.dp)
                             .iosPressable {
                                 navController.currentBackStackEntry?.savedStateHandle?.set("current_icon", icon)
                                 navController.navigate("icon_picker/$icon")
                             }
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(HabitIcons.colorFor(existing?.id ?: 0L).copy(alpha = 0.14f))
-                        ) {
-                            Icon(
-                                painter = painterResource(HabitIcons.getRes(icon)),
-                                contentDescription = null,
-                                tint = HabitIcons.colorFor(existing?.id ?: 0L),
-                                modifier = Modifier.size(21.dp)
-                            )
-                        }
+                        IOSGlyphTile(HabitIcons.resKey(icon), IOSColors.label)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("图标", style = IOSType.footnote, color = IOSColors.secondaryLabel)
@@ -181,9 +174,11 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
                         )
                     }
                 }
+                }
             }
             // 目标组
             item {
+                Box(modifier = Modifier.iosEntrance("edit:goal", 2)) {
                 IOSGroup(
                     header = "目标",
                     footer = when (frequency) {
@@ -248,16 +243,19 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
                         }
                     }
                 }
+                }
             }
             // 删除入口（仅编辑既有习惯，iOS 通讯录式底部红色行）
             if (!isNew && existing != null) {
                 item {
+                    Box(modifier = Modifier.iosEntrance("edit:delete", 3)) {
                     IOSGroup {
                         IOSActionRow(
                             label = "删除习惯",
                             color = IOSColors.red,
                             onClick = { navController.navigate("habit_delete/${existing.id}") }
                         )
+                    }
                     }
                 }
             }
