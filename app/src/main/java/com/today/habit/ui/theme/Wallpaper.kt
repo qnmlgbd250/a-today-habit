@@ -3,8 +3,12 @@ package com.today.habit.ui.theme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -92,7 +96,26 @@ val Wallpapers = listOf(
 fun wallpaperDef(id: String): WallpaperDef =
     Wallpapers.find { it.id == id } ?: Wallpapers[0]
 
-/** 全局底衬：基底色 + 三团极光雾（静态绘制一次，滚列表不跟着动） */
+/**
+ * 壁纸页骨架：每页自己画底衬（不透明），转场时实页盖实页不重叠；
+ * 静止时各页底衬图案完全一致，看起来仍是同一张连续壁纸。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WallpaperScaffold(
+    wallpaperId: String,
+    topBar: @Composable () -> Unit = {},
+    content: @Composable (PaddingValues) -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        WallpaperBackground(id = wallpaperId, modifier = Modifier.fillMaxSize())
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = topBar,
+            content = { content(it) }
+        )
+    }
+}
 @Composable
 fun WallpaperBackground(id: String, modifier: Modifier = Modifier) {
     val light = isIOSLightTheme()

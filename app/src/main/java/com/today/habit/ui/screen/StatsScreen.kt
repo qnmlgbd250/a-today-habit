@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.navigation.NavController
+import com.today.habit.ui.theme.WallpaperScaffold
 import com.today.habit.data.entity.CheckInRecord
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
+    val wallpaperId by viewModel.wallpaperId
     val habits by viewModel.allHabits.observeAsState(emptyList())
     val allCheckIns by viewModel.allCheckIns.observeAsState(emptyList())
 
@@ -65,8 +67,8 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
         label = "topFade"
     )
 
-    Scaffold(
-        containerColor = Color.Transparent
+    WallpaperScaffold(
+        wallpaperId = wallpaperId
     ) { padding ->
         Box(
             modifier = Modifier

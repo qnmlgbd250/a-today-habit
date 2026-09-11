@@ -23,6 +23,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.today.habit.ui.theme.WallpaperScaffold
+import com.today.habit.data.SettingsManager
+import androidx.compose.ui.platform.LocalContext
 import com.today.habit.ui.component.IOSNavBar
 import com.today.habit.ui.component.IOSPill
 import com.today.habit.ui.component.IOSSearchBar
@@ -38,6 +41,8 @@ import com.today.habit.ui.theme.IOSType
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IconPickerScreen(navController: NavController, selectedKey: String) {
+    val context = LocalContext.current
+    val wallpaperId = remember { SettingsManager(context).wallpaperId }
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("全部") }
     val gridState = rememberLazyGridState()
@@ -61,7 +66,8 @@ fun IconPickerScreen(navController: NavController, selectedKey: String) {
         navController.popBackStack()
     }
 
-    Scaffold(
+    WallpaperScaffold(
+        wallpaperId = wallpaperId,
         topBar = {
             IOSNavBar(
                 title = "图标",
@@ -69,7 +75,6 @@ fun IconPickerScreen(navController: NavController, selectedKey: String) {
                 elevated = true
             )
         },
-        containerColor = Color.Transparent
     ) { padding ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(4),

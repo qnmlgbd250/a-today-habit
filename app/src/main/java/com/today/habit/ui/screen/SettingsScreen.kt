@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.today.habit.ui.theme.WallpaperScaffold
 import com.today.habit.BuildConfig
 import com.today.habit.ui.component.IOSChevron
 import com.today.habit.ui.component.IOSDivider
@@ -44,6 +45,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
+    val wallpaperId by viewModel.wallpaperId
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     var toastMessage by remember { mutableStateOf<String?>(null) }
@@ -113,8 +115,8 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            containerColor = Color.Transparent
+        WallpaperScaffold(
+            wallpaperId = wallpaperId
         ) { padding ->
             Box(
                 modifier = Modifier

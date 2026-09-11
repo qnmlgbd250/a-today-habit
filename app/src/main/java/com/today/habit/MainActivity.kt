@@ -28,7 +28,6 @@ import androidx.navigation.compose.rememberNavController
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.today.habit.ui.theme.ConstantTrackTheme
-import com.today.habit.ui.theme.WallpaperBackground
 import com.today.habit.ui.screen.HomeScreen
 import com.today.habit.ui.screen.StatsScreen
 import com.today.habit.ui.screen.SettingsScreen
@@ -72,7 +71,6 @@ fun MainApp(viewModel: HabitViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val backgroundColor = MaterialTheme.colorScheme.background
-    val wallpaperId by viewModel.wallpaperId
     // 底栏只出现在三个 Tab 页；push 出去的子页面（管理 / 图标 / 表单 / 删除）无底栏
     val isFullScreenPage = currentRoute != "home" && currentRoute != "stats" && currentRoute != "settings"
 
@@ -81,11 +79,6 @@ fun MainApp(viewModel: HabitViewModel) {
             .fillMaxSize()
             .background(backgroundColor)
     ) {
-        // 全局签名底衬：极光雾 + 可换壁纸，液态玻璃卡片的底气（画在 NavHost 之外，不进模糊录制层）
-        WallpaperBackground(
-            id = wallpaperId,
-            modifier = Modifier.fillMaxSize()
-        )
         // 将 NavHost 内容录制为背景层，供液态玻璃底栏取样
         val backdrop = rememberLayerBackdrop {
             drawRect(backgroundColor)

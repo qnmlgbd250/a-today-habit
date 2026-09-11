@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.today.habit.ui.theme.WallpaperScaffold
 import com.today.habit.data.entity.Habit
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.IOSChevron
@@ -33,11 +34,13 @@ import com.today.habit.ui.viewmodel.HabitViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) {
+    val wallpaperId by viewModel.wallpaperId
     val habits by viewModel.allHabits.observeAsState(emptyList())
     val listState = rememberLazyListState()
     val collapsed = rememberIOSCollapsed(listState)
 
-    Scaffold(
+    WallpaperScaffold(
+        wallpaperId = wallpaperId,
         topBar = {
             IOSNavBar(
                 title = "管理习惯",
@@ -46,7 +49,6 @@ fun ManageHabitsScreen(navController: NavController, viewModel: HabitViewModel) 
                 elevated = collapsed
             )
         },
-        containerColor = Color.Transparent
     ) { padding ->
         LazyColumn(
             state = listState,

@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.today.habit.ui.theme.WallpaperScaffold
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.IOSNavBar
 import com.today.habit.ui.component.iosPressable
@@ -44,11 +45,12 @@ import com.today.habit.ui.viewmodel.HabitViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WallpaperScreen(navController: NavController, viewModel: HabitViewModel) {
+    val wallpaperId = viewModel.wallpaperId.value
     val current by viewModel.wallpaperId
     val gridState = rememberLazyGridState()
 
-    Scaffold(
-        containerColor = Color.Transparent,
+    WallpaperScaffold(
+        wallpaperId = wallpaperId,
         topBar = {
             IOSNavBar(
                 title = "壁纸",

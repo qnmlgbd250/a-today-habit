@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.today.habit.ui.theme.WallpaperScaffold
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.IOSActionRow
 import com.today.habit.ui.component.IOSChevron
@@ -50,6 +51,7 @@ import com.today.habit.ui.viewmodel.HabitViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, habitId: String) {
+    val wallpaperId by viewModel.wallpaperId
     val isNew = habitId == "new"
     val id = habitId.toLongOrNull()
     val habits by viewModel.allHabits.observeAsState(emptyList())
@@ -110,7 +112,8 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
     val collapsed = rememberIOSCollapsed(listState)
     val title = if (isNew) "新建习惯" else "编辑习惯"
 
-    Scaffold(
+    WallpaperScaffold(
+        wallpaperId = wallpaperId,
         topBar = {
             IOSNavBar(
                 title = title,
@@ -122,7 +125,6 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
                 }
             )
         },
-        containerColor = Color.Transparent
     ) { padding ->
         LazyColumn(
             state = listState,

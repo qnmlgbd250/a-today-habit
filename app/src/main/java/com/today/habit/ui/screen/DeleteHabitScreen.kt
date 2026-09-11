@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.today.habit.ui.theme.WallpaperScaffold
 import com.today.habit.ui.component.HabitIcons
 import com.today.habit.ui.component.IOSActionRow
 import com.today.habit.ui.component.IOSGroup
@@ -35,6 +36,7 @@ import com.today.habit.ui.viewmodel.HabitViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeleteHabitScreen(navController: NavController, viewModel: HabitViewModel, habitId: String) {
+    val wallpaperId by viewModel.wallpaperId
     val id = habitId.toLongOrNull()
     val habits by viewModel.allHabits.observeAsState(emptyList())
     val habit = habits.find { it.id == id }
@@ -42,7 +44,8 @@ fun DeleteHabitScreen(navController: NavController, viewModel: HabitViewModel, h
     var armed by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(habit?.id) { if (habit == null) armed = false }
 
-    Scaffold(
+    WallpaperScaffold(
+        wallpaperId = wallpaperId,
         topBar = {
             IOSNavBar(
                 title = "删除习惯",
@@ -50,7 +53,6 @@ fun DeleteHabitScreen(navController: NavController, viewModel: HabitViewModel, h
                 elevated = true
             )
         },
-        containerColor = Color.Transparent
     ) { padding ->
         Column(
             modifier = Modifier
