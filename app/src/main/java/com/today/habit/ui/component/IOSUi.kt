@@ -1,5 +1,8 @@
 package com.today.habit.ui.component
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +17,9 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.today.habit.ui.theme.IOSColors
 import com.today.habit.ui.theme.IOSType
+import com.today.habit.ui.theme.isIOSLightTheme
 
 /** iOS 风格填充式输入框：无描边、圆角灰底 */
 @Composable
@@ -59,7 +66,7 @@ fun IOSFormTextField(
     )
 }
 
-/** iOS 分段控制器（UISegmentedControl）：灰轨道 + 白色选中段 + 阴影 */
+/** iOS 26 液态玻璃分段控制器：磨砂轨道 + 滑动玻璃滑块 + 镜面描边 */
 @Composable
 fun IOSSegmentedControl(
     options: List<Pair<String, String>>,
@@ -67,36 +74,82 @@ fun IOSSegmentedControl(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    val light = isIOSLightTheme()
+    val index = options.indexOfFirst { it.first == selected }.coerceAtLeast(0)
+    val track = IOSColors.tertiaryCard
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(9.dp))
-            .background(IOSColors.tertiaryCard)
-            .padding(2.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        options.forEach { (id, label) ->
-            val isSel = selected == id
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .then(
-                        if (isSel) Modifier.shadow(2.dp, RoundedCornerShape(7.dp), clip = false)
-                        else Modifier
-                    )
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(if (isSel) IOSColors.card else Color.Transparent)
-                    .clickable { onSelect(id) }
-                    .padding(vertical = 7.dp)
-            ) {
-                Text(
-                    label,
-                    fontSize = 13.sp,
-                    fontWeight = if (isSel) FontWeight.SemiBold else FontWeight.Normal,
-                    color = IOSColors.label,
-                    maxLines = 1
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                Brush.verticalGradient(
+                    0.0f to lerp(track, Color.White, if (light) 0.35f else 0.08f),
+                    1.0f to track
                 )
+            )
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    0.0f to Color.White.copy(alpha = if (light) 0.5f else 0.18f),
+                    0.5f to Color.Transparent
+                ),
+                RoundedCornerShape(12.dp)
+            )
+            .padding(2.dp)
+    ) {
+        val segW = maxWidth / options.size
+        // 选中滑块：弹性滑动（iOS 26 同款跟手感）
+        val thumbX by animateDpAsState(
+            targetValue = segW * index,
+            animationSpec = spring(
+                stiffness = Spring.StiffnessMediumLow,
+                dampingRatio = 0.82f
+            ),
+            label = "segThumb"
+        )
+        // 玻璃滑块（底层）
+        Box(
+            modifier = Modifier
+                .offset(x = thumbX)
+                .width(segW)
+                .fillMaxHeight()
+                .shadow(3.dp, RoundedCornerShape(10.dp), clip = false)
+                .clip(RoundedCornerShape(10.dp))
+                .background(
+                    Brush.verticalGradient(
+                        0.0f to lerp(IOSColors.card, Color.White, if (light) 0.35f else 0.14f),
+                        1.0f to IOSColors.card
+                    )
+                )
+                .border(
+                    1.dp,
+                    Brush.verticalGradient(
+                        0.0f to Color.White.copy(alpha = if (light) 0.7f else 0.3f),
+                        0.6f to Color.Transparent
+                    ),
+                    RoundedCornerShape(10.dp)
+                )
+        )
+        // 文字层（顶层，只负责点击）
+        Row(modifier = Modifier.fillMaxWidth()) {
+            options.forEach { (id, label) ->
+                val isSel = selected == id
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { onSelect(id) }
+                        .padding(vertical = 7.dp)
+                ) {
+                    Text(
+                        label,
+                        fontSize = 13.sp,
+                        fontWeight = if (isSel) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (isSel) IOSColors.label else IOSColors.secondaryLabel,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

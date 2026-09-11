@@ -69,7 +69,7 @@ fun IconPickerScreen(navController: NavController, selectedKey: String) {
                 elevated = true
             )
         },
-        containerColor = IOSColors.background
+        containerColor = Color.Transparent
     ) { padding ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(4),

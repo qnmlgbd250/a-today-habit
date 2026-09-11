@@ -12,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -113,7 +114,7 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = IOSColors.background
+            containerColor = Color.Transparent
         ) { padding ->
             Box(
                 modifier = Modifier
@@ -137,6 +138,14 @@ fun SettingsScreen(navController: NavController, viewModel: HabitViewModel) {
                                     }
                                 ) {
                                     Text("深色模式", style = IOSType.body, color = IOSColors.label)
+                                }
+                                IOSDivider()
+                                IOSRow(
+                                    onClick = { navController.navigate("wallpaper") },
+                                    leading = { IOSSettingsIcon("paintpalette", IOSColors.teal) },
+                                    trailing = { IOSChevron() }
+                                ) {
+                                    Text("壁纸", style = IOSType.body, color = IOSColors.label)
                                 }
                             }
                         }

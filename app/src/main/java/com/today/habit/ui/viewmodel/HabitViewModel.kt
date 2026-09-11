@@ -35,11 +35,18 @@ class HabitViewModel(
 
     private val _isDarkTheme = mutableStateOf(settingsManager.isDarkTheme)
     val isDarkTheme: State<Boolean> = _isDarkTheme
-
     fun toggleTheme() {
         val newValue = !_isDarkTheme.value
         _isDarkTheme.value = newValue
         settingsManager.isDarkTheme = newValue
+    }
+
+    private val _wallpaperId = mutableStateOf(settingsManager.wallpaperId)
+    val wallpaperId: State<String> = _wallpaperId
+
+    fun setWallpaper(id: String) {
+        _wallpaperId.value = id
+        settingsManager.wallpaperId = id
     }
 
     // 记录用户是否手动选择了特定日期

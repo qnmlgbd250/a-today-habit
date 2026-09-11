@@ -9,4 +9,7 @@ class SettingsManager(context: Context) {
     var isDarkTheme: Boolean
         get() = prefs.getBoolean("is_dark_theme", false)
         set(value) = prefs.edit().putBoolean("is_dark_theme", value).apply()
+    var wallpaperId: String
+        get() = prefs.getString("wallpaper_id", "aurora") ?: "aurora"
+        set(value) = prefs.edit().putString("wallpaper_id", value).apply()
 }

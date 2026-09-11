@@ -90,7 +90,7 @@ fun HomeScreen(navController: NavController, viewModel: HabitViewModel) {
         else doneCount.toFloat() / filteredHabits.size.toFloat()
 
     Scaffold(
-        containerColor = IOSColors.background
+        containerColor = Color.Transparent
     ) { padding ->
         Box(
             modifier = Modifier

@@ -155,7 +155,7 @@ fun IOSNavBar(
     )
     Column(
         modifier = Modifier
-            .background(IOSColors.background)
+            .background(Color.Transparent)
             .statusBarsPadding()
     ) {
         Box(modifier = Modifier.fillMaxWidth().height(48.dp)) {
@@ -451,7 +451,7 @@ fun IOSInlineTextField(
 }
 
 // ============================================================
-// UISwitch：51x31，绿开 / 灰关，白色阴影旋钮
+// 开关（Liquid Glass）：珠宝渐变轨道 + 镜面边 + 高光旋钮
 // ============================================================
 
 @Composable
@@ -461,6 +461,7 @@ fun IOSSwitch(
     modifier: Modifier = Modifier
 ) {
     val haptics = LocalHapticFeedback.current
+    val light = isIOSLightTheme()
     val thumbOffset by animateDpAsState(
         targetValue = if (checked) 20.dp else 0.dp,
         animationSpec = spring(
@@ -469,12 +470,27 @@ fun IOSSwitch(
         ),
         label = "iosSwitch"
     )
+    val base = if (checked) IOSColors.green else IOSColors.switchOff
     Box(
         contentAlignment = Alignment.CenterStart,
         modifier = modifier
             .size(width = 51.dp, height = 31.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(if (checked) IOSColors.green else IOSColors.switchOff)
+            .background(
+                Brush.verticalGradient(
+                    0.0f to lerp(base, Color.White, if (light) 0.22f else 0.12f),
+                    0.45f to base,
+                    1.0f to lerp(base, Color.Black, 0.12f)
+                )
+            )
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    0.0f to Color.White.copy(alpha = if (light) 0.5f else 0.25f),
+                    0.55f to Color.Transparent
+                ),
+                RoundedCornerShape(16.dp)
+            )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -484,12 +500,20 @@ fun IOSSwitch(
             }
             .padding(horizontal = 2.dp)
     ) {
+        // 高光旋钮：纵向釉面渐变 + 柔阴影
         Box(
             modifier = Modifier
                 .offset(x = thumbOffset)
                 .size(27.dp)
-                .shadow(2.dp, CircleShape, clip = false)
-                .background(Color.White, CircleShape)
+                .shadow(3.dp, CircleShape, clip = false)
+                .clip(CircleShape)
+                .background(
+                    Brush.verticalGradient(
+                        0.0f to Color.White,
+                        0.5f to Color.White,
+                        1.0f to if (light) Color(0xFFE4E4E9) else Color(0xFFD1D1D6)
+                    )
+                )
         )
     }
 }
@@ -715,24 +739,25 @@ fun IOSActionRow(
 // 高级材质：柔阴影 + 顶部高光卡片
 // ============================================================
 
-/** Liquid Glass 卡片：大圆角 + 顶部镜面高光 + 上亮下隐的玻璃边缘光 + 柔深阴影 */
+/** Liquid Glass 卡片：半透明玻璃底（底衬雾色透上来）+ 顶部釉光 + 上亮下隐的玻璃边缘光 + 柔深阴影 */
 @Composable
 fun Modifier.iosElevatedCard(radius: Dp = 22.dp): Modifier {
-    val card = IOSColors.card
     val light = isIOSLightTheme()
-    val sheen = lerp(card, Color.White, if (light) 0.05f else 0.07f)
+    // 玻璃基底：浅色白 0.60 / 深色白 0.08，雾色从后面透上来
+    val top = if (light) Color.White.copy(alpha = 0.75f) else Color.White.copy(alpha = 0.15f)
+    val base = if (light) Color.White.copy(alpha = 0.60f) else Color.White.copy(alpha = 0.08f)
     // 边缘光：顶部亮、向下隐去（玻璃反光边）
     val edge = Brush.verticalGradient(
         0.0f to Color.White.copy(alpha = if (light) 0.55f else 0.22f),
         0.35f to Color.White.copy(alpha = 0.0f),
         1.0f to Color.Transparent
     )
-    val shadowCol = if (light) Color(0x1A000000) else Color(0x70000000)
+    val shadowCol = if (light) Color(0x24000000) else Color(0x70000000)
     return this
         .shadow(24.dp, RoundedCornerShape(radius), spotColor = shadowCol, ambientColor = shadowCol)
         .clip(RoundedCornerShape(radius))
         .background(
-            Brush.verticalGradient(0.0f to sheen, 0.3f to card, 1.0f to card)
+            Brush.verticalGradient(0.0f to top, 0.35f to base, 1.0f to base)
         )
         .border(1.dp, edge, RoundedCornerShape(radius))
 }

@@ -50,7 +50,7 @@ fun DeleteHabitScreen(navController: NavController, viewModel: HabitViewModel, h
                 elevated = true
             )
         },
-        containerColor = IOSColors.background
+        containerColor = Color.Transparent
     ) { padding ->
         Column(
             modifier = Modifier

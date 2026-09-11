@@ -66,7 +66,7 @@ fun StatsScreen(navController: NavController, viewModel: HabitViewModel) {
     )
 
     Scaffold(
-        containerColor = IOSColors.background
+        containerColor = Color.Transparent
     ) { padding ->
         Box(
             modifier = Modifier
