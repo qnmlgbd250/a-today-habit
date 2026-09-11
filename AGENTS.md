@@ -24,16 +24,11 @@
    如需中文名留档：`cp app/build/outputs/apk/release/app-release.apk "app/build/outputs/apk/release/小日常-<版本>.apk"`
    可选校验签名：`$ANDROID_SDK/build-tools/<版本>/apksigner.bat verify --print-certs app/build/outputs/apk/release/app-release.apk`，证书 DN 应为 `CN=XiaoRiChang`，SHA-256 见下节。
 
-3. **发布到云剪贴板**（房间地址：http://8.148.25.234:5000/r/sky ，内容 20 天有效）：
+3. **发布到云剪贴板**（房间地址：http://8.148.25.234:5000/r/sky ，内容 20 天有效）：**只上传 APK 文件，不发送发版说明文本**。
    ```bash
-   # 上传 APK（multipart，字段名固定为 file）
+   # 上传 APK（multipart，字段名固定为 file；文件名必须用纯 ASCII，中文文件名服务端会报“请选择文件”）
    curl -X POST "http://8.148.25.234:5000/api/files?room=sky" \
-     -F "file=@app/build/outputs/apk/release/小日常-<版本>.apk"
-
-   # 发送发版说明文本（JSON）
-   curl -X POST "http://8.148.25.234:5000/api/items?room=sky" \
-     -H "Content-Type: application/json" \
-     -d '{"content": "【小日常 vX.Y.Z 发版】..."}'
+     -F "file=@app/build/outputs/apk/release/app-release.apk;filename=xiaorichang-<版本>.apk"
    ```
    - 上传成功返回 HTTP 201；
 
