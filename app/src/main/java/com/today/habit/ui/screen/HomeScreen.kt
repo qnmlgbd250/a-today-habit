@@ -168,7 +168,7 @@ private fun TodayOverviewCard(doneCount: Int, totalCount: Int, progress: Float) 
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .iosElevatedCard(18.dp)
+            .iosElevatedCard(22.dp)
             .padding(18.dp)
     ) {
         IOSProgressRing(

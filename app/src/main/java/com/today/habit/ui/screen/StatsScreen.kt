@@ -112,7 +112,7 @@ private fun HeatmapCard(allCheckIns: List<CheckInRecord>, onDateClick: (LocalDat
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .iosElevatedCard(16.dp)
+            .iosElevatedCard(22.dp)
             .padding(16.dp)
     ) {
         Row(
@@ -389,7 +389,7 @@ private fun HabitStatsCard(habit: Habit, checkIns: List<CheckInRecord>) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .iosElevatedCard(16.dp)
+            .iosElevatedCard(22.dp)
             .padding(16.dp)
     ) {
         IOSProgressRing(

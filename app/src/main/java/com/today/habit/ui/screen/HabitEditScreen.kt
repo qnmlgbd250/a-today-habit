@@ -145,7 +145,7 @@ fun HabitEditScreen(navController: NavController, viewModel: HabitViewModel, hab
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .iosElevatedCard(16.dp)
+                            .iosElevatedCard(22.dp)
                             .iosPressable {
                                 navController.currentBackStackEntry?.savedStateHandle?.set("current_icon", icon)
                                 navController.navigate("icon_picker/$icon")

@@ -8,6 +8,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -316,7 +317,7 @@ fun IOSGroup(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .iosElevatedCard(12.dp),
+                .iosElevatedCard(18.dp),
             content = content
         )
         if (footer != null) {
@@ -714,28 +715,35 @@ fun IOSActionRow(
 // 高级材质：柔阴影 + 顶部高光卡片
 // ============================================================
 
-/** 静奢卡片：柔阴影 + 顶部高光渐变（替代纯色平板） */
+/** Liquid Glass 卡片：大圆角 + 顶部镜面高光 + 上亮下隐的玻璃边缘光 + 柔深阴影 */
 @Composable
-fun Modifier.iosElevatedCard(radius: Dp = 16.dp): Modifier {
+fun Modifier.iosElevatedCard(radius: Dp = 22.dp): Modifier {
     val card = IOSColors.card
     val light = isIOSLightTheme()
-    val highlight = lerp(card, Color.White, if (light) 0.06f else 0.10f)
-    val shadowCol = if (light) Color(0x14000000) else Color(0x66000000)
+    val sheen = lerp(card, Color.White, if (light) 0.05f else 0.07f)
+    // 边缘光：顶部亮、向下隐去（玻璃反光边）
+    val edge = Brush.verticalGradient(
+        0.0f to Color.White.copy(alpha = if (light) 0.55f else 0.22f),
+        0.35f to Color.White.copy(alpha = 0.0f),
+        1.0f to Color.Transparent
+    )
+    val shadowCol = if (light) Color(0x1A000000) else Color(0x70000000)
     return this
-        .shadow(16.dp, RoundedCornerShape(radius), spotColor = shadowCol, ambientColor = shadowCol)
+        .shadow(24.dp, RoundedCornerShape(radius), spotColor = shadowCol, ambientColor = shadowCol)
         .clip(RoundedCornerShape(radius))
         .background(
-            Brush.verticalGradient(0.0f to highlight, 0.28f to card, 1.0f to card)
+            Brush.verticalGradient(0.0f to sheen, 0.3f to card, 1.0f to card)
         )
+        .border(1.dp, edge, RoundedCornerShape(radius))
 }
 
-/** 通用字形角标：淡 tint 渐变底 + 字形（习惯用墨色） */
+/** 通用字形角标：淡 tint 渐变底 + 镜面边 + 字形（习惯用墨色） */
 @Composable
 fun IOSGlyphTile(
     iconKey: String,
     tint: Color,
     size: Dp = 38.dp,
-    radius: Dp = 10.dp,
+    radius: Dp = 12.dp,
     glyphSize: Dp = 21.dp
 ) {
     Box(
@@ -745,8 +753,16 @@ fun IOSGlyphTile(
             .clip(RoundedCornerShape(radius))
             .background(
                 Brush.verticalGradient(
-                    listOf(tint.copy(alpha = 0.15f), tint.copy(alpha = 0.06f))
+                    listOf(tint.copy(alpha = 0.18f), tint.copy(alpha = 0.06f))
                 )
+            )
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    0.0f to Color.White.copy(alpha = 0.35f),
+                    0.5f to Color.Transparent
+                ),
+                RoundedCornerShape(radius)
             )
     ) {
         Icon(
